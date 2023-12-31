@@ -156,15 +156,15 @@ class MipNeRF(nn.Module):
             # predict rgb
             if self.use_viewdirs:
                 #  do positional encoding of viewdirs
-                viewdirs = self.viewdirs_encoding(view_dirs.to(self.device))             # [N_rays, 24]
-                viewdirs = torch.cat((viewdirs, view_dirs.to(self.device)), -1)          # [N_rays, 48]
-                viewdirs = torch.tile(viewdirs[:, None, :], (1, self.num_samples, 1))   # [N_rays, N_samples, 48]
-                viewdirs = viewdirs.reshape((-1, viewdirs.shape[-1]))                   # [N_rays*N_samples, 48]
-                new_encodings = self.rgb_net0(new_encodings)                            # [N_rays*N_samples, 256]
-                new_encodings = torch.cat((new_encodings, viewdirs), -1)                # [N_rays*N_samples, 48+256]
-                new_encodings = self.rgb_net1(new_encodings)                            # [N_rays*N_samples, 304]
-            raw_rgb = self.final_rgb(new_encodings).reshape((-1, self.num_samples, 3))
-
+                viewdirs = self.viewdirs_encoding(view_dirs.to(self.device))             # [N_rays, 27]
+                viewdirs = torch.cat((viewdirs, view_dirs.to(self.device)), -1)          # [N_rays, 30]
+                viewdirs = torch.tile(viewdirs[:, None, :], (1, self.num_samples, 1))    # [N_rays, N_samples, 30]
+                viewdirs = viewdirs.reshape((-1, viewdirs.shape[-1]))                    # [N_rays*N_samples, 30]
+                new_encodings = self.rgb_net0(new_encodings)                             # [N_rays*N_samples, 256]
+                new_encodings = torch.cat((new_encodings, viewdirs), -1)                 # [N_rays*N_samples, 30+256]
+                new_encodings = self.rgb_net1(new_encodings)                             # [N_rays*N_samples, 286]
+            raw_rgb = self.final_rgb(new_encodings).reshape((-1, self.num_samples, 3))   # [N_rays, N_samples, 286]
+            print(raw_rgb.shape)
             # Add noise to regularize the density predictions if needed.
             if self.randomized and self.density_noise:
                 raw_density += self.density_noise * torch.rand(raw_density.shape, dtype=raw_density.dtype, device=raw_density.device)
