@@ -23,10 +23,9 @@ def config_parser():
     # Training hyperparams
     parser.add_argument("--max_iters", type=int, default=200_000)
     parser.add_argument("--N_rand", type=int, default=1024*4, help='#of Sampling rays')
-    parser.add_argument("--use_viewdirs", action='store_true', help='use full 5D input instead of 3D')
     parser.add_argument("--no_ndc", action='store_true')
     # Model 
-    parser.add_argument("--use_viewdirs", action="store_false")
+    parser.add_argument("--use_viewdirs", action="store_false", help='use full 5D input instead of 3D')
     parser.add_argument("--randomized", action="store_false")
     parser.add_argument("--ray_shape", type=str, default="cone")        # should be "cylinder" if llff
     parser.add_argument("--white_bkgd", action="store_false")           # should be False if using llff
