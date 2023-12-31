@@ -7,5 +7,5 @@ do
     exp=blender_${obj}
     dir=/mnt2/SKY/dataset/nerf_synthetic/${obj}
 
-    python run_multi_gpu_mipnerf.py --expname $exp --datadir $dir
+    python run_mipnerf.py --expname $exp --datadir $dir
 done
