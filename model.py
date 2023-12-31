@@ -127,7 +127,7 @@ class MipNeRF(nn.Module):
         near, far = bounds[...,0], bounds[...,1]                            # [N_rays, 1]
         radii = torch.reshape(ray_batch[..., 8], [-1, 1])                   # [N_rays, 1]
         viewdirs = ray_batch[:,-3:] if ray_batch.shape[-1] > 9 else None    # [N_rays, 3]
-        print(viewdirs.shape)
+        
         for l in range(self.num_levels):
             # sample
             if l == 0:  # coarse grain sample
@@ -156,12 +156,16 @@ class MipNeRF(nn.Module):
             # predict rgb
             if self.use_viewdirs:
                 #  do positional encoding of viewdirs
-                viewdirs = self.viewdirs_encoding(viewdirs.to(self.device))             # [N_rays, 24]
+                viewdirs = self.viewdirs_encoding(viewdirs.to(self.device))             # [N_rays, 27]
+                print(viewdirs.shape)
                 viewdirs = torch.cat((viewdirs, viewdirs.to(self.device)), -1)          # [N_rays, 27]
+                print(viewdirs.shape)
                 viewdirs = torch.tile(viewdirs[:, None, :], (1, self.num_samples, 1))   # [N_rays, N_samples, 27]
+                print(viewdirs.shape)
                 viewdirs = viewdirs.reshape((-1, viewdirs.shape[-1]))                   # [N_rays*N_samples, 27]
                 print(viewdirs.shape)
                 new_encodings = self.rgb_net0(new_encodings)                            # [N_rays*N_samples, 256]
+                print(new_encodings.shape)
                 new_encodings = torch.cat((new_encodings, viewdirs), -1)                # [N_rays*N_samples, 27+256]
                 print(new_encodings.shape)
                 new_encodings = self.rgb_net1(new_encodings)                            # [N_rays*N_samples, 256]
