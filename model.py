@@ -116,7 +116,7 @@ class MipNeRF(nn.Module):
         _xavier_init(self)
         self.to(device)
 
-    def forward(self, ray_batch):
+    def forward(self, ray_batch, netchunk):
         comp_rgbs = []
         distances = []
         accs = []
@@ -163,8 +163,8 @@ class MipNeRF(nn.Module):
                 new_encodings = self.rgb_net0(new_encodings)                             # [N_rays*N_samples, 256]
                 new_encodings = torch.cat((new_encodings, viewdirs), -1)                 # [N_rays*N_samples, 30+256]
                 new_encodings = self.rgb_net1(new_encodings)                             # [N_rays*N_samples, 286]
-            raw_rgb = self.final_rgb(new_encodings).reshape((-1, self.num_samples, 3))   # [N_rays, N_samples, 286]
-            print(raw_rgb.shape)
+            raw_rgb = self.final_rgb(new_encodings).reshape((-1, self.num_samples, 3))   # [N_rays, N_samples, 3]
+            
             # Add noise to regularize the density predictions if needed.
             if self.randomized and self.density_noise:
                 raw_density += self.density_noise * torch.rand(raw_density.shape, dtype=raw_density.dtype, device=raw_density.device)

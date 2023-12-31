@@ -129,7 +129,7 @@ def train(rank, world_size, args):
         target = target[select_coords[:, 0], select_coords[:, 1]]     # (N_rand, 3)
         
         # 4. Rendering 
-        comp_rgbs, _, _ = render_mipnerf(H, W, K, chunk=args.chunk, 
+        comp_rgbs, _, _ = render_mipnerf(H, W, K, chunk=args.chunk, netchunk=args.netchunk,
                                         mipnerf=model, rays=batch_rays, radii=radii, near=near, far=far,
                                         use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
         

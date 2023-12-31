@@ -6,7 +6,7 @@ from nerf_helper import *
 
 to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
 
-def render_mipnerf(H, W, K, chunk=1024*32, 
+def render_mipnerf(H, W, K, chunk=1024*16, netchunk=1024*32,
                    mipnerf=None, rays=None, radii=None, c2w=None, near=0., far=1.,
                    use_viewdirs=True, ndc=False):
     """
@@ -42,7 +42,7 @@ def render_mipnerf(H, W, K, chunk=1024*32,
     
     all_comp_rgbs, all_distances, all_accs = [], [], []
     for i in range(0, rays.shape[0], chunk):
-        comp_rgbs, distances, accs = mipnerf(rays[i:i+chunk])
+        comp_rgbs, distances, accs = mipnerf(rays[i:i+chunk], netchunk)
         all_comp_rgbs.append(comp_rgbs)     # [2, chunk, 3]
         all_distances.append(distances)     # [2, chunk, 1]
         all_accs.append(accs)               # [2, chunk, 1]

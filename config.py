@@ -23,7 +23,7 @@ def config_parser():
     # Training hyperparams
     parser.add_argument("--max_iters", type=int, default=200_000)
     parser.add_argument("--chunk", type=int, default=1024*16)
-    parser.add_argument("--N_rand", type=int, default=1024*4, help='#of Sampling rays')
+    parser.add_argument("--N_rand", type=int, default=1024, help='#of Sampling rays')
     parser.add_argument("--no_ndc", action='store_true')
     # Model 
     parser.add_argument("--use_viewdirs", action="store_false", help='use full 5D input instead of 3D')
