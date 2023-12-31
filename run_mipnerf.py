@@ -151,15 +151,16 @@ def train(rank, world_size, args):
             }, path)
             print('Saved checkpoints at', path)
         
-        if i%args.i_testset==0 and i > 0:
+        if i :
+        #if i%args.i_testset==0 and i > 0:
             testsavedir = os.path.join(basedir, expname, 'testset_{:06d}'.format(i))
             os.makedirs(testsavedir, exist_ok=True)
             print('test poses shape', poses[i_test].shape)
             with torch.no_grad():
-                rgbs = render_path(poses[i_test], hwf, K, args.chunk, model, 
+                rgbs = render_path(poses[0], hwf, K, args.chunk, model, 
                                     near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
                                     gt_imgs=images[i_test], savedir=testsavedir)
-                
+                print(rgbs.dtype, images[i_test].dtype)
                 eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], None)
             if rank == 0 :
                 with open(logdir, 'a') as file :
