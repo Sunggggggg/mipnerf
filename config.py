@@ -51,7 +51,7 @@ def config_parser():
     # logging/saving options
     parser.add_argument("--i_print", type=int, default=10)
     parser.add_argument("--i_weights", type=int, default=10000)
-    parser.add_argument("--i_testset", type=int, default=10000)
+    parser.add_argument("--i_testset", type=int, default=1000)
     parser.add_argument("--i_video",   type=int, default=10000)
     
     return parser
