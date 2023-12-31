@@ -22,6 +22,7 @@ def config_parser():
     parser.add_argument("--coarse_weight_decay", type=float, default=0.1)
     # Training hyperparams
     parser.add_argument("--max_iters", type=int, default=200_000)
+    parser.add_argument("--chunk", type=int, default=1024*16)
     parser.add_argument("--N_rand", type=int, default=1024*4, help='#of Sampling rays')
     parser.add_argument("--no_ndc", action='store_true')
     # Model 
