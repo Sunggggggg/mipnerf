@@ -77,13 +77,7 @@ def render_path(render_poses, hwf, K, chunk, mipnerf,
             rgb8 = to8b(rgb[-1].cpu().numpy())
             filename = os.path.join(savedir, '{:03d}.png'.format(i))
             imageio.imwrite(filename, rgb8)
-
-        if gt_imgs is not None and render_factor==0:
-            psnr_c = -10. * np.log10(np.mean(np.square(rgb[0].cpu().numpy() - gt_imgs[i])))
-            psnr_f = -10. * np.log10(np.mean(np.square(rgb[1].cpu().numpy() - gt_imgs[i])))
-            print(psnr_c, psnr_f)
-
-            return psnr_c, psnr_f
+    
         rgbs.append(rgb.cpu().numpy())
 
     rgbs = np.stack(rgbs, 0)

@@ -11,6 +11,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from config import config_parser
 from set_multi_gpus import set_ddp
 from dataset import load_data
+from metric import get_metric
 
 # 
 from scheduler import MipLRDecay
@@ -53,7 +54,7 @@ def train(rank, world_size, args):
             attr = getattr(args, arg)
             file.write('{} = {}\n'.format(arg, attr))
     # logging dir
-    loggin_dir = os.path.join(basedir, expname, 'eval.txt')
+    logdir = os.path.join(basedir, expname, 'eval.txt')
 
     model = MipNeRF(
         use_viewdirs=args.use_viewdirs,
@@ -141,32 +142,31 @@ def train(rank, world_size, args):
         optimizer.step()
         scheduler.step()
 
-        if i>0:
         # Rest is logging
-        # if i%args.i_weights==0 and i > 0:
+        if i%args.i_weights==0 and i > 0:
             path = os.path.join(basedir, expname, '{:06d}.tar'.format(i))
             torch.save({
                 'network_fn_state_dict': model.module.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
             }, path)
             print('Saved checkpoints at', path)
-        
-        #if i%args.i_testset==0 and i > 0:
+        if i :
+        # if i%args.i_testset==0 and i > 0:
             testsavedir = os.path.join(basedir, expname, 'testset_{:06d}'.format(i))
             os.makedirs(testsavedir, exist_ok=True)
             print('test poses shape', poses[i_test].shape)
-            i_test = [1, 3, 5, 2]
             with torch.no_grad():
-                eval_psnr_c, eval_psnr_f = render_path(poses[i_test], hwf, K, args.chunk, model, 
-                                                      near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
-                                                      gt_imgs=images[i_test], savedir=testsavedir)
+                rgbs = render_path(poses[i_test], hwf, K, args.chunk, model, 
+                                    near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
+                                    gt_imgs=images[i_test], savedir=testsavedir)
+                
+                eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[-1], images[i_test], 'lpips', rank)
+            if rank == 0 :
+                with open(logdir, 'a') as file :
+                    file.write(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f} LPIPS : {eval_lpips:.3f}\n")
             print('Saved test set')
 
-            if rank == 0 :
-                with open(loggin_dir, 'a') as file :
-                    file.write(f"[ITER]{i:06d} PSNR_C : {eval_psnr_c:.3f}, PSNR_F : {eval_psnr_f:.3f}\n")
-
-        #if i%args.i_print==0 and rank == 0:
+        if i%args.i_print==0 and rank == 0:
             tqdm.write(f"[TRAIN] Iter: {i} Total Loss: {train_psnr_c.item():.4f} PSNR: {train_psnr_f.item():.4f}")
         
 
