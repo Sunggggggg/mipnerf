@@ -1,9 +1,20 @@
+import os
+import tqdm
+import imageio
 import torch
 from nerf_helper import *
+
+to8b = lambda x : (255*np.clip(x,0,1)).astype(np.uint8)
 
 def render_mipnerf(H, W, K, chunk=1024*32, 
                    mipnerf=None, rays=None, radii=None, c2w=None, near=0., far=1.,
                    use_viewdirs=True, ndc=False):
+    """
+    Return
+    all_comp_rgbs   # [2, N_rand, 3]
+    all_distances   # [2, N_rand, 1]
+    all_accs        # [2, N_rand, 1]
+    """
     if c2w is not None:
         # Only use rendering
         rays_o, rays_d = get_rays(H, W, K, c2w)
@@ -32,15 +43,47 @@ def render_mipnerf(H, W, K, chunk=1024*32,
     all_comp_rgbs, all_distances, all_accs = [], [], []
     for i in range(0, rays.shape[0], chunk):
         comp_rgbs, distances, accs = mipnerf(rays[i:i+chunk])
-        all_comp_rgbs.append(comp_rgbs)     # [2, N_rand, 3]
-        all_distances.append(distances)     # [2, N_rand, 1]
-        all_accs.append(accs)               # [2, N_rand, 1]
+        all_comp_rgbs.append(comp_rgbs)     # [2, chunk, 3]
+        all_distances.append(distances)     # [2, chunk, 1]
+        all_accs.append(accs)               # [2, chunk, 1]
 
-    all_comp_rgbs = torch.cat(all_comp_rgbs, 1)
-    all_distances = torch.cat(all_distances, 1)
-    all_accs = torch.cat(all_accs, 1)
+    all_comp_rgbs = torch.cat(all_comp_rgbs, 1) # [2, N_rand, 3]
+    all_distances = torch.cat(all_distances, 1) # [2, N_rand, 1]
+    all_accs = torch.cat(all_accs, 1)           # [2, N_rand, 1]
 
     return all_comp_rgbs, all_distances, all_accs
+
+def render_path(render_poses, hwf, K, chunk, gt_imgs=None, savedir=None, render_factor=0):
+    """ Rendering only
+    rgbs (numpy) : [N, 2, H, W, 3]
+    """
+    H, W, focal = hwf
+    if render_factor!=0:
+        # Render downsampled for speed
+        H = H//render_factor
+        W = W//render_factor
+        focal = focal/render_factor
+
+    rgbs = []
+    for i, c2w in enumerate(tqdm(render_poses)):
+        rgb, distance, acc= render_mipnerf(H, W, K, chunk=chunk, c2w=c2w[:3,:4])
+        rgb = torch.reshape(rgb, [2, H, W, 3])
+
+        if savedir is not None:
+            rgb8 = to8b(rgbs[-1])
+            filename = os.path.join(savedir, '{:03d}.png'.format(i))
+            imageio.imwrite(filename, rgb8)
+
+        if gt_imgs is not None and render_factor==0:
+            psnr_c = -10. * np.log10(np.mean(np.square(rgb[0].cpu().numpy() - gt_imgs[i])))
+            psnr_f = -10. * np.log10(np.mean(np.square(rgb[1].cpu().numpy() - gt_imgs[i])))
+            print(psnr_c, psnr_f)
+
+            return psnr_c, psnr_f
+        rgbs.append(rgb.cpu().numpy())
+
+    rgbs = np.stack(rgbs, 0)
+    return rgbs
 
 def volumetric_rendering(rgb, density, t_vals, dirs, white_bkgd):
     """Volumetric Rendering Function.

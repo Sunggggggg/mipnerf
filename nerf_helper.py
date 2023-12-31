@@ -2,21 +2,34 @@ import torch
 import numpy as np
 
 def get_radii(rays_d):
-    """ Get Cone/Frustum radius
-    Args
-    rays_d :    [H, W, 3]
-
-    Return
-    radii  :    [H, W, 1]
     """
-    dx = np.sqrt(np.sum((rays_d[:-1, :, :] - rays_d[1:, :, :]) ** 2, -1))
-    dx = np.concatenate([dx, dx[-2:-1, :]], 0)
-    radii = dx[..., None] * 2 / np.sqrt(12)
+    args
+        rays_d :    [H, W, 3]
+
+    return
+        radii  :    [H, W, 1]
+    """
+    dx = torch.sqrt(torch.sum((rays_d[:-1, :, :] - rays_d[1:, :, :]) ** 2, -1))
+    dx = torch.concatenate([dx, dx[-2:-1, :]], 0)
+    radii = dx[..., None] * 2 / 12**0.5
 
     return radii
-
+# Ray helpers
 def get_rays(H, W, K, c2w):
-    """ All rays from origin, rays_o, rays_d is dir vectors return to numpy
+    """ All rays from origin, rays_o, rays_d is dir vectors
+    """
+    device = c2w.device
+
+    i, j = torch.meshgrid(torch.linspace(0, W-1, W), torch.linspace(0, H-1, H))
+    i = i.t()
+    j = j.t()
+    dirs = torch.stack([(i-K[0][2])/K[0][0], -(j-K[1][2])/K[1][1], -torch.ones_like(i)], -1).to(device)
+    rays_d = torch.sum(dirs[..., np.newaxis, :] * c2w[:3,:3], -1)  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
+    rays_o = c2w[:3,-1].expand(rays_d.shape)
+    return rays_o, rays_d
+
+def get_rays_np(H, W, K, c2w):
+    """ All rays from origin, rays_o, rays_d is dir
     """
     i, j = np.meshgrid(np.arange(W, dtype=np.float32), np.arange(H, dtype=np.float32), indexing='xy')
     dirs = np.stack([(i-K[0][2])/K[0][0], -(j-K[1][2])/K[1][1], -np.ones_like(i)], -1)

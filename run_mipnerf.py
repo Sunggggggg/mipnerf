@@ -52,8 +52,9 @@ def train(rank, world_size, args):
         for arg in sorted(vars(args)):
             attr = getattr(args, arg)
             file.write('{} = {}\n'.format(arg, attr))
-    
-    # TODO : Model forward setting
+    # logging dir
+    loggin_dir = os.path.join(basedir, expname, 'eval.txt')
+
     model = MipNeRF(
         use_viewdirs=args.use_viewdirs,
         randomized=args.randomized,
@@ -70,7 +71,7 @@ def train(rank, world_size, args):
         max_deg=args.max_deg,
         viewdirs_min_deg=args.viewdirs_min_deg,
         viewdirs_max_deg=args.viewdirs_max_deg,
-        device=args.device,
+        device=torch.device(rank),
     )
 
     # Optimizer and scheduler
@@ -83,6 +84,7 @@ def train(rank, world_size, args):
     loss_func = NeRFLoss(args.coarse_weight_decay)
 
     # Move training data to GPU
+    model.train()
     poses = torch.Tensor(poses).to(rank)
     render_poses = torch.Tensor(render_poses).to(rank)
 
@@ -96,7 +98,9 @@ def train(rank, world_size, args):
         pose = poses[img_i, :3,:4]
         target = images[img_i]
 
-        # 2. Generate rays (numpy)
+        target = torch.Tensor(target).to(rank)
+        pose = torch.Tensor(pose).to(rank)
+        # 2. Generate rays
         rays_o, rays_d = get_rays(H, W, K, pose)
         radii = get_radii(rays_d)
 
@@ -104,36 +108,63 @@ def train(rank, world_size, args):
         if i < args.precrop_iters:
             dH = int(H//2 * args.precrop_frac)
             dW = int(W//2 * args.precrop_frac)
-            coords = np.stack(
-                np.meshgrid(
-                    np.linspace(H//2 - dH, H//2 + dH - 1, 2*dH), 
-                    np.linspace(W//2 - dW, W//2 + dW - 1, 2*dW), indexing= 'ij')
-                    , -1)
+            coords = torch.stack(
+                torch.meshgrid(
+                    torch.linspace(H//2 - dH, H//2 + dH - 1, 2*dH), 
+                    torch.linspace(W//2 - dW, W//2 + dW - 1, 2*dW)
+                ), -1)
             if i == start:
                 print(f"[Config] Center cropping of size {2*dH} x {2*dW} is enabled until iter {args.precrop_iters}")                
         else:
-            coords = np.stack(np.meshgrid(np.linspace(0, H-1, H), np.linspace(0, W-1, W), indexing= 'ij'), -1)  # (H, W, 2)
-        
+            coords = torch.stack(torch.meshgrid(torch.linspace(0, H-1, H), torch.linspace(0, W-1, W)), -1)  # (H, W, 2)
+
         coords = np.reshape(coords, [-1,2])  # (H * W, 2)
         select_inds = np.random.choice(coords.shape[0], size=[N_rand], replace=False)  # (N_rand,)
-        select_coords = coords[select_inds].astype(np.int64)        # (N_rand, 2)
+        select_coords = coords[select_inds].long()        # (N_rand, 2)
         rays_o = rays_o[select_coords[:, 0], select_coords[:, 1]]   # (N_rand, 3)
         rays_d = rays_d[select_coords[:, 0], select_coords[:, 1]]   # (N_rand, 3)
         radii = radii[select_coords[:, 0], select_coords[:, 1]]     # (N_rand, 1)
-        lossmult = np.ones_like(radii)                              # (N_rand, 1)
-        batch_rays = np.stack([rays_o, rays_d], 0)                      # (2, N_rand, 3)
-        target_s = target[select_coords[:, 0], select_coords[:, 1]]     # (N_rand, 3)
-
-        # Move numpy to gpu
-        batch_rays = torch.tensor(batch_rays).float().to(rank)
-        radii = torch.tensor(radii).float().to(rank)
-        lossmult = torch.tensor(lossmult).float().to(rank)
-        target_s = torch.tensor(target_s).float().to(rank)
+        lossmult = torch.ones_like(radii)                              # (N_rand, 1)
+        batch_rays = torch.stack([rays_o, rays_d], 0)                      # (2, N_rand, 3)
+        target = target[select_coords[:, 0], select_coords[:, 1]]     # (N_rand, 3)
         
-        #####  Core optimization loop  #####
-        comp_rgbs, distances, accs = render_mipnerf(H, W, K, chunk=args.chunk, 
-                                                    mipnerf=model, rays=batch_rays, radii=radii, near=near, far=far,
-                                                    use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
+        # 4. Rendering 
+        comp_rgbs, _, _ = render_mipnerf(H, W, K, chunk=args.chunk, 
+                                        mipnerf=model, rays=batch_rays, radii=radii, near=near, far=far,
+                                        use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
+        
+        # 5. loss and update
+        loss, (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
+
+        if i>0:
+        # Rest is logging
+        # if i%args.i_weights==0 and i > 0:
+            path = os.path.join(basedir, expname, '{:06d}.tar'.format(i))
+            torch.save({
+                'network_fn_state_dict': model.module.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+            }, path)
+            print('Saved checkpoints at', path)
+        
+        #if i%args.i_testset==0 and i > 0:
+            testsavedir = os.path.join(basedir, expname, 'testset_{:06d}'.format(i))
+            os.makedirs(testsavedir, exist_ok=True)
+            print('test poses shape', poses[i_test].shape)
+            with torch.no_grad():
+                eval_psnr_c, eval_psnr_f = render_path(poses[i_test], hwf, K, args.chunk, gt_imgs=images[i_test], savedir=testsavedir)
+            print('Saved test set')
+
+            if rank == 0 :
+                with open(loggin_dir, 'a') as file :
+                    file.write(f"[ITER]{i:06d} PSNR_C : {eval_psnr_c:.3f}, PSNR_F : {eval_psnr_f:.3f}\n")
+
+        #if i%args.i_print==0 and rank == 0:
+            tqdm.write(f"[TRAIN] Iter: {i} Total Loss: {train_psnr_c.item():.4f} PSNR: {train_psnr_f.item():.4f}")
         
 
 if __name__ == '__main__' :

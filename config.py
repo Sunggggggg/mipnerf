@@ -46,4 +46,10 @@ def config_parser():
                         help='number of steps to train on central crops')
     parser.add_argument("--precrop_frac", type=float, default=.5, 
                         help='fraction of img taken for central crops') 
+    # logging/saving options
+    parser.add_argument("--i_print", type=int, default=10)
+    parser.add_argument("--i_weights", type=int, default=10000)
+    parser.add_argument("--i_testset", type=int, default=10000)
+    parser.add_argument("--i_video",   type=int, default=10000)
+    
     return parser
