@@ -74,7 +74,7 @@ def render_path(render_poses, hwf, K, chunk, mipnerf,
         rgb = torch.reshape(rgb, [2, H, W, 3])
 
         if savedir is not None:
-            rgb8 = to8b(rgbs[-1])
+            rgb8 = to8b(rgb[-1])
             filename = os.path.join(savedir, '{:03d}.png'.format(i))
             imageio.imwrite(filename, rgb8)
 

@@ -90,7 +90,7 @@ def train(rank, world_size, args):
 
     # Training hyperparams
     N_rand = args.N_rand
-    max_iters = args.max_iters
+    max_iters = args.max_iters + 1
     start = 0 + 1
     for i in trange(start, max_iters):
         # 1. Random select image
