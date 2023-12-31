@@ -1,5 +1,5 @@
 import os
-from tqdm import tqdm
+import tqdm
 import imageio
 import torch
 from nerf_helper import *
