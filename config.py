@@ -23,6 +23,8 @@ def config_parser():
     # Training hyperparams
     parser.add_argument("--max_iters", type=int, default=200_000)
     parser.add_argument("--N_rand", type=int, default=1024*4, help='#of Sampling rays')
+    parser.add_argument("--use_viewdirs", action='store_true', help='use full 5D input instead of 3D')
+    parser.add_argument("--no_ndc", action='store_true')
     # Model 
     parser.add_argument("--use_viewdirs", action="store_false")
     parser.add_argument("--randomized", action="store_false")
@@ -30,7 +32,7 @@ def config_parser():
     parser.add_argument("--white_bkgd", action="store_false")           # should be False if using llff
     parser.add_argument("--override_defaults", action="store_true")
     parser.add_argument("--num_levels", type=int, default=2)
-    parser.add_argument("--num_samples", type=int, default=128)
+    parser.add_argument("--N_samples", type=int, default=128)
     parser.add_argument("--hidden", type=int, default=256)
     parser.add_argument("--density_noise", type=float, default=0.0)
     parser.add_argument("--density_bias", type=float, default=-1.0)
@@ -40,8 +42,6 @@ def config_parser():
     parser.add_argument("--max_deg", type=int, default=16)
     parser.add_argument("--viewdirs_min_deg", type=int, default=0)
     parser.add_argument("--viewdirs_max_deg", type=int, default=4)
-
-
     # MISC
     parser.add_argument("--precrop_iters", type=int, default=0,
                         help='number of steps to train on central crops')

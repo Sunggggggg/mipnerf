@@ -54,4 +54,5 @@ def load_data(datadir, dataset_type='blender', scale=4,
     else:
         print('Unknown dataset type', dataset_type, 'exiting')
     
-    return images, poses, render_poses, K, hwf, near, far, i_train, i_val, i_test
+    return images, poses, render_poses, hwf, K, near, far, i_train, i_val, i_test
+

@@ -60,7 +60,7 @@ def train(rank, world_size, args):
         ray_shape=args.ray_shape,
         white_bkgd=args.white_bkgd,
         num_levels=args.num_levels,
-        num_samples=args.num_samples,
+        num_samples=args.N_samples,
         hidden=args.hidden,
         density_noise=args.density_noise,
         density_bias=args.density_bias,
@@ -88,8 +88,8 @@ def train(rank, world_size, args):
 
     # Training hyperparams
     N_rand = args.N_rand
-    start = 0 + 1
     max_iters = args.max_iters
+    start = 0 + 1
     for i in trange(start, max_iters):
         # 1. Random select image
         img_i = np.random.choice(i_train)
@@ -131,8 +131,9 @@ def train(rank, world_size, args):
         target_s = torch.tensor(target_s).float().to(rank)
         
         #####  Core optimization loop  #####
-        comp_rgbs, distances, accs = render_mipnerf(args, H, W, K, chunk=args.chunk, 
-                                 mipnerf=model, rays=batch_rays, radii=radii, near=near, far=far)
+        comp_rgbs, distances, accs = render_mipnerf(H, W, K, chunk=args.chunk, 
+                                                    mipnerf=model, rays=batch_rays, radii=radii, near=near, far=far,
+                                                    use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
         
 
 if __name__ == '__main__' :
