@@ -157,7 +157,7 @@ def train(rank, world_size, args):
             os.makedirs(testsavedir, exist_ok=True)
             print('test poses shape', poses[i_test].shape)
             with torch.no_grad():
-                rgbs = render_path(poses[0], hwf, K, args.chunk, model, 
+                rgbs = render_path(poses[:2], hwf, K, args.chunk, model, 
                                     near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
                                     gt_imgs=images[i_test], savedir=testsavedir)
                 print(rgbs.dtype, images[i_test].dtype)
