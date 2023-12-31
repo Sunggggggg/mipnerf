@@ -7,6 +7,9 @@ def load_data(datadir, dataset_type='blender', scale=4,
               spherify=False, llffhold=8, no_ndc=False, # llff
               white_bkgd=True, testskip=8               # blender
               ):
+    """
+    images float 64
+    """
     # Load data
     K = None
     if dataset_type == 'llff':

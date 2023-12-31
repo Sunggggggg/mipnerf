@@ -157,11 +157,10 @@ def train(rank, world_size, args):
             os.makedirs(testsavedir, exist_ok=True)
             print('test poses shape', poses[i_test].shape)
             with torch.no_grad():
-                rgbs = render_path(poses[:2], hwf, K, args.chunk, model, 
+                rgbs = render_path(poses[i_test], hwf, K, args.chunk, model, 
                                     near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
                                     gt_imgs=images[i_test], savedir=testsavedir)
-                print(rgbs.dtype, images[i_test].dtype)
-                eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], None)
+                eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1].astype(images[i_test].dtype), images[i_test], None)
             if rank == 0 :
                 with open(logdir, 'a') as file :
                     file.write(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}\n")
