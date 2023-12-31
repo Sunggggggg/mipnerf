@@ -127,7 +127,7 @@ class MipNeRF(nn.Module):
         near, far = bounds[...,0], bounds[...,1]                            # [N_rays, 1]
         radii = torch.reshape(ray_batch[..., 8], [-1, 1])                   # [N_rays, 1]
         viewdirs = ray_batch[:,-3:] if ray_batch.shape[-1] > 9 else None    # [N_rays, 3]
-
+        print(viewdirs.shape)
         for l in range(self.num_levels):
             # sample
             if l == 0:  # coarse grain sample
