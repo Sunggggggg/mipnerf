@@ -152,7 +152,7 @@ class MipNeRF(nn.Module):
             new_encodings = torch.cat((new_encodings, samples_enc), -1)     # [N_rays*N_samples, 256+96]
             new_encodings = self.density_net1(new_encodings)                
             raw_density = self.final_density(new_encodings).reshape((-1, self.num_samples, 1)) # [N_rays*N_samples, 1]
-            print(newraw_density_encodings.shape)
+            print(raw_density.shape)
             # predict rgb
             if self.use_viewdirs:
                 #  do positional encoding of viewdirs
