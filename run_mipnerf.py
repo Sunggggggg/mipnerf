@@ -157,9 +157,8 @@ def train(rank, world_size, args):
             print('test poses shape', poses[i_test].shape)
             i_test = [1,2,4,5,6]
             with torch.no_grad():
-                eval_psnr_c, eval_psnr_f = render_path(poses[i_test], hwf, K, args.chunk, 
-                                                      mipnerf=model, rays=batch_rays, radii=radii, near=near, far=far,
-                                                      use_viewdirs=args.use_viewdirs, ndc=args.no_ndc, 
+                eval_psnr_c, eval_psnr_f = render_path(poses[i_test], hwf, K, args.chunk, model, 
+                                                      near=near, far=far, use_viewdirs=args.use_viewdirs, ndc=args.no_ndc, 
                                                       gt_imgs=images[i_test], savedir=testsavedir)
             print('Saved test set')
 

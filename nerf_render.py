@@ -53,7 +53,9 @@ def render_mipnerf(H, W, K, chunk=1024*16, netchunk=1024*32,
 
     return all_comp_rgbs, all_distances, all_accs
 
-def render_path(render_poses, hwf, K, chunk, model, gt_imgs=None, savedir=None, render_factor=0):
+def render_path(render_poses, hwf, K, chunk, mipnerf, 
+                near=0., far=1., use_viewdirs=True, no_ndc=False, 
+                gt_imgs=None, savedir=None, render_factor=0):
     """ Rendering only
     rgbs (numpy) : [N, 2, H, W, 3]
     """
@@ -66,7 +68,9 @@ def render_path(render_poses, hwf, K, chunk, model, gt_imgs=None, savedir=None, 
 
     rgbs = []
     for i, c2w in enumerate(tqdm(render_poses)):
-        rgb, distance, acc= render_mipnerf(H, W, K, chunk=chunk, mipnerf=model, c2w=c2w[:3,:4])
+        rgb, distance, acc= render_mipnerf(H, W, K, chunk=chunk, mipnerf=mipnerf, 
+                                           c2w=c2w[:3,:4], near=near, far=far,
+                                           use_viewdirs=use_viewdirs, ndc=no_ndc)
         rgb = torch.reshape(rgb, [2, H, W, 3])
 
         if savedir is not None:
