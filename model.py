@@ -142,6 +142,7 @@ class MipNeRF(nn.Module):
                                                           stop_grad=True, resample_padding=self.resample_padding,
                                                           ray_shape=self.ray_shape)
             # do integrated positional encoding of samples
+            print(t_vals.shape, mean.shape, var.shape)
             samples_enc = self.positional_encoding(mean, var)[0]
             samples_enc = samples_enc.reshape([-1, samples_enc.shape[-1]])
 
