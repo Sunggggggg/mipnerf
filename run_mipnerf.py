@@ -155,6 +155,7 @@ def train(rank, world_size, args):
             testsavedir = os.path.join(basedir, expname, 'testset_{:06d}'.format(i))
             os.makedirs(testsavedir, exist_ok=True)
             print('test poses shape', poses[i_test].shape)
+            i_test = [1, 3, 5, 2]
             with torch.no_grad():
                 eval_psnr_c, eval_psnr_f = render_path(poses[i_test], hwf, K, args.chunk, model, 
                                                       near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
