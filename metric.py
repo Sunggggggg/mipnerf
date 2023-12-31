@@ -13,7 +13,7 @@ def get_metric(rgbs, targets, lpips=None, device=torch.device('cuda')):
 
     if lpips is not None :
         lpips_vgg = LPIPS(net="vgg").cuda() 
-        lpips_score = np.mean([lpips_vgg(torch.from_numpy(targets[i]).cuda().permute(2, 0, 1).unsqueeze(0).type(torch.FloatTensor).to(device), 
+        lpips_score = torch.mean([lpips_vgg(torch.from_numpy(targets[i]).cuda().permute(2, 0, 1).unsqueeze(0).type(torch.FloatTensor).to(device), 
                                 torch.from_numpy(rgbs[i]).cuda().permute(2, 0, 1).unsqueeze(0).type(torch.FloatTensor).to(device)) for i in range(test_view)]).item()
         return psnr, ssim, lpips_score
     
