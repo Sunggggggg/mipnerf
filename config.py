@@ -44,7 +44,7 @@ def config_parser():
     parser.add_argument("--viewdirs_min_deg", type=int, default=0)
     parser.add_argument("--viewdirs_max_deg", type=int, default=4)
     # MISC
-    parser.add_argument("--precrop_iters", type=int, default=0,
+    parser.add_argument("--precrop_iters", type=int, default=500,
                         help='number of steps to train on central crops')
     parser.add_argument("--precrop_frac", type=float, default=.5, 
                         help='fraction of img taken for central crops') 
