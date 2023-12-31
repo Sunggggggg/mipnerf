@@ -10,7 +10,7 @@ def get_radii(rays_d):
         radii  :    [H, W, 1]
     """
     dx = torch.sqrt(torch.sum((rays_d[:-1, :, :] - rays_d[1:, :, :]) ** 2, -1))
-    dx = torch.concatenate([dx, dx[-2:-1, :]], 0)
+    dx = torch.cat([dx, dx[-2:-1, :]], 0)
     radii = dx[..., None] * 2 / 12**0.5
 
     return radii
