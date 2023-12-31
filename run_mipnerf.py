@@ -151,8 +151,7 @@ def train(rank, world_size, args):
             }, path)
             print('Saved checkpoints at', path)
         
-        if i :
-        #if i%args.i_testset==0 and i > 0:
+        if i%args.i_testset==0 and i > 0:
             testsavedir = os.path.join(basedir, expname, 'testset_{:06d}'.format(i))
             os.makedirs(testsavedir, exist_ok=True)
             print('test poses shape', poses[i_test].shape)
