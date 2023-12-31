@@ -1,25 +1,6 @@
 import torch
 from nerf_helper import *
 
-def batchify_rays(rays_flat, chunk=1024*32, **kwargs):
-    """Render rays in smaller minibatches to avoid OOM.
-    Args
-        rays_flat       : [H*W, 3(ray_o) + 3(ray_d) + 1(n) + 1(f) + r(1) + 3(dir)] # [N, 12]
-
-    function
-        render_rays     : Predict rgb, denstiy of each rays
-    """
-    all_ret = {}
-    for i in range(0, rays_flat.shape[0], chunk):
-        ret = render_rays(rays_flat[i:i+chunk], **kwargs)
-        for k in ret:
-            if k not in all_ret:
-                all_ret[k] = []
-            all_ret[k].append(ret[k])
-
-    all_ret = {k : torch.cat(all_ret[k], 0) for k in all_ret}
-    return all_ret
-
 def render_mipnerf(H, W, K, chunk=1024*32, 
                    mipnerf=None, rays=None, radii=None, c2w=None, near=0., far=1.,
                    use_viewdirs=True, ndc=False):

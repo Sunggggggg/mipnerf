@@ -7,6 +7,11 @@ def config_parser():
     parser.add_argument("--expname", type=str, help='experiment name')
     parser.add_argument("--basedir", type=str, default='logs')
     parser.add_argument("--eval", action='store_true', help='Eval mode')
+    # Dataset
+    parser.add_argument("--datadir", type=str, default='/mnt2/SKY/dataset/nerf_synthetic/lego')
+    parser.add_argument("--dataset_type", type=str, default='blender')
+    parser.add_argument('--scale', default=4, type=int)
+    parser.add_argument("--testskip", type=int, default=8)
     # Optimizer and scheduler
     parser.add_argument("--lr_init", type=float, default=1e-3)      
     parser.add_argument("--weight_decay", type=float, default=1e-5)
@@ -18,7 +23,6 @@ def config_parser():
     # Training hyperparams
     parser.add_argument("--max_iters", type=int, default=200_000)
     parser.add_argument("--N_rand", type=int, default=1024*4, help='#of Sampling rays')
-    
     # Model 
     parser.add_argument("--use_viewdirs", action="store_false")
     parser.add_argument("--randomized", action="store_false")
