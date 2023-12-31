@@ -163,7 +163,7 @@ def train(rank, world_size, args):
                 eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], None)
             if rank == 0 :
                 with open(logdir, 'a') as file :
-                    file.write(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f} LPIPS : {eval_lpips:.3f}\n")
+                    file.write(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}\n")
             print('Saved test set')
 
         if i%args.i_print==0 and rank == 0:
