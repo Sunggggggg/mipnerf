@@ -213,7 +213,7 @@ def sample_along_rays(origins, directions, radii, num_samples, near, far, random
       lindisp: bool, sampling linearly in disparity rather than depth.
 
     Returns:
-      t_vals: torch.tensor, [batch_size, num_samples], sampled z values.
+      t_vals: torch.tensor, [batch_size, num_samples+1], sampled z values.
       means: torch.tensor, [batch_size, num_samples, 3], sampled means.
       covs: torch.tensor, [batch_size, num_samples, 3, 3], sampled covariances.
     """
