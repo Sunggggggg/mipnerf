@@ -6,7 +6,7 @@ import torch
 import torch.optim as optim
 
 import torch.multiprocessing as mp
-
+from torch.nn.parallel import DistributedDataParallel as DDP
 # 
 from config import config_parser
 from set_multi_gpus import set_ddp
@@ -73,7 +73,7 @@ def train(rank, world_size, args):
         viewdirs_max_deg=args.viewdirs_max_deg,
         device=torch.device(rank),
     )
-
+    model = DDP(model, device_ids=[rank])
     # Optimizer and scheduler
     optimizer = optim.AdamW(model.parameters(), lr=args.lr_init, weight_decay=args.weight_decay)
     scheduler = MipLRDecay(optimizer, lr_init=args.lr_init, lr_final=args.lr_final, 
