@@ -1,0 +1,19 @@
+num_inputs = 25
+emb_type = IMAGE
+image_token = 16
+norm_pix_loss = False
+
+scale = 4
+sort = False
+cam_pose_encoding = True
+
+white_bkgd = True
+
+# model
+embed_dim = 128             
+depth = 4                   
+num_heads = 4               
+
+decoder_embed_dim = 64      
+decoder_depth = 2
+decoder_num_heads = 4
