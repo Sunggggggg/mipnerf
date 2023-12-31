@@ -18,8 +18,8 @@ class PositionalEncoding(nn.Module):
         y : [B, N, 3]
 
         Return
-        x_ret : [B, N, 96]      (max_deg-min_deg)*(sin, cos)*(x,y,z) = 96
-        y_ret : [B, N, 96]
+        x_ret : [B, N, E]      (max_deg-min_deg)*(sin, cos)*(x,y,z) = E
+        y_ret : [B, N, E]
         '''
         shape = list(x.shape[:-1]) + [-1]
         x_enc = (x[..., None, :] * self.scales[:, None]).reshape(shape)
@@ -126,7 +126,7 @@ class MipNeRF(nn.Module):
         bounds = torch.reshape(ray_batch[...,6:8], [-1,1,2])                # [N_rays, 1, 2]
         near, far = bounds[...,0], bounds[...,1]                            # [N_rays, 1]
         radii = torch.reshape(ray_batch[..., 8], [-1, 1])                   # [N_rays, 1]
-        viewdirs = ray_batch[:,-3:] if ray_batch.shape[-1] > 9 else None    # [N_rays, 3]
+        view_dirs = ray_batch[:,-3:] if ray_batch.shape[-1] > 9 else None    # [N_rays, 3]
         
         for l in range(self.num_levels):
             # sample
@@ -156,19 +156,13 @@ class MipNeRF(nn.Module):
             # predict rgb
             if self.use_viewdirs:
                 #  do positional encoding of viewdirs
-                viewdirs = self.viewdirs_encoding(viewdirs.to(self.device))             # [N_rays, 27]
-                print(viewdirs.shape)
-                viewdirs = torch.cat((viewdirs, viewdirs.to(self.device)), -1)          # [N_rays, 27]
-                print(viewdirs.shape)
-                viewdirs = torch.tile(viewdirs[:, None, :], (1, self.num_samples, 1))   # [N_rays, N_samples, 27]
-                print(viewdirs.shape)
-                viewdirs = viewdirs.reshape((-1, viewdirs.shape[-1]))                   # [N_rays*N_samples, 27]
-                print(viewdirs.shape)
+                viewdirs = self.viewdirs_encoding(view_dirs.to(self.device))             # [N_rays, 24]
+                viewdirs = torch.cat((viewdirs, view_dirs.to(self.device)), -1)          # [N_rays, 48]
+                viewdirs = torch.tile(viewdirs[:, None, :], (1, self.num_samples, 1))   # [N_rays, N_samples, 48]
+                viewdirs = viewdirs.reshape((-1, viewdirs.shape[-1]))                   # [N_rays*N_samples, 48]
                 new_encodings = self.rgb_net0(new_encodings)                            # [N_rays*N_samples, 256]
-                print(new_encodings.shape)
-                new_encodings = torch.cat((new_encodings, viewdirs), -1)                # [N_rays*N_samples, 27+256]
-                print(new_encodings.shape)
-                new_encodings = self.rgb_net1(new_encodings)                            # [N_rays*N_samples, 256]
+                new_encodings = torch.cat((new_encodings, viewdirs), -1)                # [N_rays*N_samples, 48+256]
+                new_encodings = self.rgb_net1(new_encodings)                            # [N_rays*N_samples, 304]
             raw_rgb = self.final_rgb(new_encodings).reshape((-1, self.num_samples, 3))
 
             # Add noise to regularize the density predictions if needed.
