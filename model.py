@@ -150,17 +150,18 @@ class MipNeRF(nn.Module):
             # predict density
             new_encodings = self.density_net0(samples_enc)                  # [N_rays*N_samples, 256]
             new_encodings = torch.cat((new_encodings, samples_enc), -1)     # [N_rays*N_samples, 256+96]
-            new_encodings = self.density_net1(new_encodings)                
-            raw_density = self.final_density(new_encodings).reshape((-1, self.num_samples, 1)) # [N_rays*N_samples, 1]
-            print(raw_density.shape)
+            new_encodings = self.density_net1(new_encodings)                # [N_rays*N_samples, 256]
+            raw_density = self.final_density(new_encodings).reshape((-1, self.num_samples, 1)) # [N_rays, N_samples, 1]
+            
             # predict rgb
             if self.use_viewdirs:
                 #  do positional encoding of viewdirs
                 viewdirs = self.viewdirs_encoding(viewdirs.to(self.device))             # [N_rays, 24]
-                viewdirs = torch.cat((viewdirs, viewdirs.to(self.device)), -1)          # [N_rays, 3+24]
-                viewdirs = torch.tile(viewdirs[:, None, :], (1, self.num_samples, 1))   # [N_rays, N_samples, 3+24]
+                viewdirs = torch.cat((viewdirs, viewdirs.to(self.device)), -1)          # [N_rays, 27]
+                viewdirs = torch.tile(viewdirs[:, None, :], (1, self.num_samples, 1))   # [N_rays, N_samples, 27]
                 viewdirs = viewdirs.reshape((-1, viewdirs.shape[-1]))                   # [N_rays*N_samples, 27]
-                new_encodings = self.rgb_net0(new_encodings)                            # [N_rays*N_samples, 27+256]
+                print(viewdirs.shape)
+                new_encodings = self.rgb_net0(new_encodings)                            # [N_rays*N_samples, 256]
                 new_encodings = torch.cat((new_encodings, viewdirs), -1)                # [N_rays*N_samples, 27+256]
                 print(new_encodings.shape)
                 new_encodings = self.rgb_net1(new_encodings)                            # [N_rays*N_samples, 256]
