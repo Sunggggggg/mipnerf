@@ -23,6 +23,7 @@ def config_parser():
     # Training hyperparams
     parser.add_argument("--max_iters", type=int, default=200_000)
     parser.add_argument("--chunk", type=int, default=1024*16)
+    parser.add_argument("--netchunk", type=int, default=1024*32)
     parser.add_argument("--N_rand", type=int, default=1024, help='#of Sampling rays')
     parser.add_argument("--no_ndc", action='store_true')
     # Model 
