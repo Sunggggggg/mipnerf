@@ -13,7 +13,7 @@ def get_metric(rgbs, targets, lpips=None, device=torch.device('cuda')):
     psnr = np.mean([peak_signal_noise_ratio(targets[i],rgbs[i]) for i in range(test_view)])
     ssim = np.mean([structural_similarity(targets[i], rgbs[i], data_range=rgbs.max()-rgbs.min(), channel_axis=-1) for i in range(test_view)])
 
-    lpips_score = torch.mean([lpips_vgg(torch.from_numpy(targets[i]).cuda().permute(2, 0, 1).unsqueeze(0).type(torch.FloatTensor).to(device), 
+    lpips_score = torch.mean(*[lpips_vgg(torch.from_numpy(targets[i]).cuda().permute(2, 0, 1).unsqueeze(0).type(torch.FloatTensor).to(device), 
                                 torch.from_numpy(rgbs[i]).cuda().permute(2, 0, 1).unsqueeze(0).type(torch.FloatTensor).to(device)) 
                                 for i in range(test_view)]).item()
     
