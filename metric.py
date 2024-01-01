@@ -8,8 +8,8 @@ def get_metric(rgbs, targets, lpips=None, device=torch.device('cuda')):
     assert targets.dtype == rgbs.dtype, "Different data type"
     
     test_view = targets.shape[0]
-    psnr = np.mean([peak_signal_noise_ratio(rgbs[i], targets[i]) for i in range(test_view)])
-    ssim = np.mean([structural_similarity(rgbs[i], targets[i], data_range=rgbs.max()-rgbs.min(), channel_axis=-1) for i in range(test_view)])
+    psnr = np.mean([peak_signal_noise_ratio(targets[i],rgbs[i]) for i in range(test_view)])
+    ssim = np.mean([structural_similarity(targets[i], rgbs[i], data_range=rgbs.max()-rgbs.min(), channel_axis=-1) for i in range(test_view)])
 
     if lpips is not None :
         lpips_vgg = LPIPS(net="vgg").cuda() 
