@@ -1,14 +1,12 @@
 import torch
 import numpy as np
 from skimage.metrics import structural_similarity, peak_signal_noise_ratio
-from lpips import LPIPS
 
-def get_metric(rgbs, targets, lpips=None, device=torch.device('cuda')):
+
+def get_metric(rgbs, targets, lpips_vgg=None, device=torch.device('cuda')):
     """
     rgbs, targets : [N, H, W, 3]
     """
-    lpips_vgg = LPIPS(net="vgg").to(device)
-
     rgbs = np.clip(rgbs, 0., 1.).astype(targets.dtype)
     assert targets.dtype == rgbs.dtype, "Different data type"
     

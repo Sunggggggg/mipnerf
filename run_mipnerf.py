@@ -1,10 +1,10 @@
 import os
 import numpy as np
 from tqdm import tqdm, trange
+from lpips import LPIPS
 
 import torch
 import torch.optim as optim
-
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
 # 
@@ -21,7 +21,6 @@ from model import MipNeRF
 # 
 from nerf_helper import *
 from nerf_render import *
-
 
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
@@ -55,6 +54,7 @@ def train(rank, world_size, args):
             file.write('{} = {}\n'.format(arg, attr))
     # logging dir
     logdir = os.path.join(basedir, expname, 'eval.txt')
+    lpips_vgg = LPIPS(net="vgg").to(rank)
 
     model = MipNeRF(
         use_viewdirs=args.use_viewdirs,
@@ -160,7 +160,7 @@ def train(rank, world_size, args):
                 rgbs = render_path(poses[i_test], hwf, K, args.chunk, model, 
                                     near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
                                     gt_imgs=images[i_test], savedir=testsavedir)
-                eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], None, torch.device(rank))
+                eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], lpips_vgg, torch.device(rank))
             if rank == 0 :
                 with open(logdir, 'a') as file :
                     file.write(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}, LPIPS : {eval_lpips:.3f}\n")
