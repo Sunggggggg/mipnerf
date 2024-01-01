@@ -1,6 +1,7 @@
 #!/bin/bash
 
-object="lego hotdog materials chair drums ficus mic ship"
+#object="lego hotdog materials chair drums ficus mic ship"
+object="hotdog materials chair drums ficus mic ship"
 
 for obj in $object
 do
