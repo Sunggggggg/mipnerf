@@ -160,10 +160,10 @@ def train(rank, world_size, args):
                 rgbs = render_path(poses[i_test], hwf, K, args.chunk, model, 
                                     near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
                                     gt_imgs=images[i_test], savedir=testsavedir)
-                eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1].astype(images[i_test].dtype), images[i_test], None)
+                eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], None, torch.device(rank))
             if rank == 0 :
                 with open(logdir, 'a') as file :
-                    file.write(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}\n")
+                    file.write(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}, LPIPS : {eval_lpips:.3f}\n")
             print('Saved test set')
 
         if i%args.i_print==0 and rank == 0:
