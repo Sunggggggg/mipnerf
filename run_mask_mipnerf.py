@@ -117,13 +117,13 @@ def train(rank, world_size, args):
         else :
             encoder = PATCH
 
-        encoder = encoder(args, H, W)
+        encoder = encoder(args, H, W).to(rank)
 
         print("Load MAE model weight :", args.mae_weight)
         ckpt = torch.load(args.mae_weight)
         encoder.load_state_dict(ckpt['model_state_dict'], strict=False)
 
-        encoder = myDDP(encoder.to(rank), device_ids=[rank])
+        encoder = myDDP(encoder, device_ids=[rank])
         encoder.eval()
 
         mae_input_images, mae_input_poses = mae_input_format(images[i_train], poses[i_train], nerf_input, mae_input, args.emb_type)
