@@ -7,6 +7,7 @@ def config_parser():
     parser.add_argument("--expname", type=str, help='experiment name')
     parser.add_argument("--basedir", type=str, default='logs')
     parser.add_argument("--eval", action='store_true', help='Eval mode')
+    parser.add_argument('--nerf_config', is_config_file=True, help='config file path')
     parser.add_argument("--nerf_weight", type=str, default=None)
     # Dataset
     parser.add_argument("--datadir", type=str, default='/mnt2/SKY/dataset/nerf_synthetic/lego')
@@ -50,6 +51,7 @@ def config_parser():
     parser.add_argument("--nerf_input", type=int, default=8)
     parser.add_argument("--mae_input", type=int, default=25)
     # MAE
+    parser.add_argument('--mae_config', is_config_file=True, help='config file path')
     parser.add_argument("--mae_weight", type=str, default=None)
     parser.add_argument("--emb_type", type=str, default="IMAGE")        # OR "PATCH"
     parser.add_argument("--image_token", type=int, default=16)

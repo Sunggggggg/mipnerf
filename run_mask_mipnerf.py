@@ -174,8 +174,8 @@ def train(rank, world_size, args):
         rays_o = rays_o[select_coords[:, 0], select_coords[:, 1]]   # (N_rand, 3)
         rays_d = rays_d[select_coords[:, 0], select_coords[:, 1]]   # (N_rand, 3)
         radii = radii[select_coords[:, 0], select_coords[:, 1]]     # (N_rand, 1)
-        lossmult = torch.ones_like(radii)                              # (N_rand, 1)
-        batch_rays = torch.stack([rays_o, rays_d], 0)                      # (2, N_rand, 3)
+        lossmult = torch.ones_like(radii)                             # (N_rand, 1)
+        batch_rays = torch.stack([rays_o, rays_d], 0)                 # (2, N_rand, 3)
         target = target[select_coords[:, 0], select_coords[:, 1]]     # (N_rand, 3)
         
         # 4. Rendering 
@@ -239,7 +239,7 @@ def train(rank, world_size, args):
             print('Saved test set')
 
         if i%args.i_print==0 and rank == 0:
-            tqdm.write(f"[TRAIN] Iter: {i} Total Loss: {loss.item():.4f} PSNR: {train_psnr_f.item():.4f}")
+            tqdm.write(f"[TRAIN] Iter: {i} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f}")
         
 
 if __name__ == '__main__' :

@@ -1,19 +1,22 @@
-num_inputs = 25
+# Few-shot
+nerf_input = 8
+mae_input = 25
+
+# MAE
+mae_weight = weight/MAE/pre_trained_MAE.tar
 emb_type = IMAGE
 image_token = 16
-norm_pix_loss = False
-
-scale = 4
-sort = False
 cam_pose_encoding = True
 
-white_bkgd = True
-
-# model
+# Model
 embed_dim = 128             
 depth = 4                   
 num_heads = 4               
-
 decoder_embed_dim = 64      
 decoder_depth = 2
 decoder_num_heads = 4
+
+# loss
+mae_loss_func = COSINE
+loss_lam_c = 0.2
+loss_lam_f = 2.0
