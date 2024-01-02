@@ -150,5 +150,5 @@ def sampling_pose(N, theta_range, phi_range, radius_range) :
     radius = np.random.uniform(*radius_range, N)
 
     render_poses = torch.stack([pose_spherical(theta[i], phi[i], radius[i]) for i in range(N)], 0)    # [N, 4, 4]
-    render_poses = render_poses.cpu().numpy()
+    
     return render_poses
