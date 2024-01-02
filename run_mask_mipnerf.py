@@ -244,7 +244,7 @@ def train(rank, world_size, args):
             print('Saved test set')
 
         if i%args.i_print==0 and rank == 0:
-            tqdm.write(f"[TRAIN] Iter: {i} Total Loss: {loss.item():.6f}")
+            tqdm.write(f"[TRAIN] Iter: {i} Total Loss: {loss.item():.4f} PSNR: {train_psnr_f.item():.6f}")
         
 
 if __name__ == '__main__' :
