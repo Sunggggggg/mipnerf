@@ -20,7 +20,7 @@ from nerf_helper import *
 from nerf_render import *
 
 #
-import MAE
+from MAE import IMAGE, PATCH, mae_input_format
 from loss import MAELoss    
 
 FIX = True
@@ -112,7 +112,12 @@ def train(rank, world_size, args):
         print("train idx", i_train)
         print("Masking Ratio : %.4f"%(1-nerf_input/mae_input))
         # 2. Build MAE (Only Encoder+a part)
-        encoder = MAE.__dict__[args.emb_type](args, H, W)
+        if args.emb_type == "IMAGE" :
+            encoder = IMAGE
+        else :
+            encoder = PATCH
+
+        encoder = encoder(args, H, W)
 
         print("Load MAE model weight :", args.mae_weight)
         ckpt = torch.load(args.mae_weight)
@@ -121,7 +126,7 @@ def train(rank, world_size, args):
         encoder = myDDP(encoder.to(rank), device_ids=[rank])
         encoder.eval()
 
-        mae_input_images, mae_input_poses = MAE.MAE.mae_input_format(images[i_train], poses[i_train], nerf_input, mae_input, args.emb_type)
+        mae_input_images, mae_input_poses = mae_input_format(images[i_train], poses[i_train], nerf_input, mae_input, args.emb_type)
         mae_input_images = mae_input_images.to(rank)      # [1, 3, N, H, W]
         mae_input_poses = mae_input_poses.to(rank)        # [1, N, 4, 4]
 
@@ -194,14 +199,14 @@ def train(rank, world_size, args):
                 rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
 
                 # Coarse
-                rgbs_images, rgbs_poses = MAE.mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type)
+                rgbs_images, rgbs_poses = mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type)
                 rgbs_images = rgbs_images.to(rank)      # [1, 3, N, H, W] or # [1, 3, Hn, Wn]
                 rgbs_poses = rgbs_poses.to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
                 
                 # Fine
-                rgbs_images, rgbs_poses = MAE.mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
+                rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
                 rgbs_images = rgbs_images.to(rank)      # [1, 3, N, H, W]
                 rgbs_poses = rgbs_poses.to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
