@@ -26,7 +26,7 @@ def config_parser():
     parser.add_argument("--max_iters", type=int, default=400_000)
     parser.add_argument("--chunk", type=int, default=1024*16)
     parser.add_argument("--netchunk", type=int, default=1024*32)
-    parser.add_argument("--N_rand", type=int, default=1024*2, help='#of Sampling rays')
+    parser.add_argument("--N_rand", type=int, default=1024*32, help='#of Sampling rays')
     parser.add_argument("--no_ndc", action='store_true')
     parser.add_argument("--precrop_iters", type=int, default=500)
     parser.add_argument("--precrop_frac", type=float, default=.5) 
@@ -69,8 +69,8 @@ def config_parser():
     parser.add_argument("--loss_lam_f", type=float, default=2.)
     # logging/saving options
     parser.add_argument("--i_print", type=int, default=10)
-    parser.add_argument("--i_weights", type=int, default=100000)
-    parser.add_argument("--i_testset", type=int, default=10000)
-    parser.add_argument("--i_video",   type=int, default=100000)
+    parser.add_argument("--i_weights", type=int, default=100)
+    parser.add_argument("--i_testset", type=int, default=100)
+    parser.add_argument("--i_video",   type=int, default=10000)
     
     return parser
