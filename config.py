@@ -7,6 +7,7 @@ def config_parser():
     parser.add_argument("--expname", type=str, help='experiment name')
     parser.add_argument("--basedir", type=str, default='logs')
     parser.add_argument("--eval", action='store_true', help='Eval mode')
+    parser.add_argument("--nerf_weight", type=str, default=None)
     # Dataset
     parser.add_argument("--datadir", type=str, default='/mnt2/SKY/dataset/nerf_synthetic/lego')
     parser.add_argument("--dataset_type", type=str, default='blender')
@@ -26,6 +27,8 @@ def config_parser():
     parser.add_argument("--netchunk", type=int, default=1024*32)
     parser.add_argument("--N_rand", type=int, default=1024, help='#of Sampling rays')
     parser.add_argument("--no_ndc", action='store_true')
+    parser.add_argument("--precrop_iters", type=int, default=500)
+    parser.add_argument("--precrop_frac", type=float, default=.5) 
     # Model 
     parser.add_argument("--use_viewdirs", action="store_false", help='use full 5D input instead of 3D')
     parser.add_argument("--randomized", action="store_false")
@@ -43,15 +46,29 @@ def config_parser():
     parser.add_argument("--max_deg", type=int, default=16)
     parser.add_argument("--viewdirs_min_deg", type=int, default=0)
     parser.add_argument("--viewdirs_max_deg", type=int, default=4)
-    # MISC
-    parser.add_argument("--precrop_iters", type=int, default=500,
-                        help='number of steps to train on central crops')
-    parser.add_argument("--precrop_frac", type=float, default=.5, 
-                        help='fraction of img taken for central crops') 
+    # Few-shot
+    parser.add_argument("--nerf_input", type=int, default=8)
+    parser.add_argument("--mae_input", type=int, default=25)
+    # MAE
+    parser.add_argument("--mae_weight", type=str, default=None)
+    parser.add_argument("--emb_type", type=str, default="IMAGE")        # OR "PATCH"
+    parser.add_argument("--image_token", type=int, default=16)
+    parser.add_argument("--cam_pose_encoding", action='store_false')
+    # MAE (Model)
+    parser.add_argument('--embed_dim', type=int, default=1024)
+    parser.add_argument('--depth', type=int, default=24)
+    parser.add_argument('--num_heads', type=int, default=16)
+    parser.add_argument('--decoder_embed_dim', type=int, default=512)
+    parser.add_argument('--decoder_depth',type=int, default=8, )
+    parser.add_argument('--decoder_num_heads', type=int,default=16)
+    # MAE (loss)
+    parser.add_argument("--mae_loss_func", type=str, default="COSINE")  # OR "PERCE"
+    parser.add_argument("--loss_lam_c", type=float, default=0.2)        # loss_lam_f * 0.1
+    parser.add_argument("--loss_lam_f", type=float, default=2.)
     # logging/saving options
     parser.add_argument("--i_print", type=int, default=10)
-    parser.add_argument("--i_weights", type=int, default=10000)
-    parser.add_argument("--i_testset", type=int, default=10000)
-    parser.add_argument("--i_video",   type=int, default=10000)
+    parser.add_argument("--i_weights", type=int, default=100000)
+    parser.add_argument("--i_testset", type=int, default=100000)
+    parser.add_argument("--i_video",   type=int, default=100000)
     
     return parser

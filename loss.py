@@ -29,3 +29,20 @@ class NeRFLoss(torch.nn.modules.loss._Loss):
 
 def mse_to_psnr(mse):
     return -10.0 * torch.log10(mse)
+
+class MAELoss(torch.nn.modules.loss._Loss):
+    def __init__(self, loss_type="COSINE"):
+        super(MAELoss, self).__init__()
+        self.loss_type = loss_type
+        self.cossim = torch.nn.CosineSimilarity(dim=-1)
+
+    def forward(self, gt_feat, object_feat):
+        """ Get loss, angle btw gt vector and object vector  
+        gt_feat, object_feat : [1, N, D]
+        """
+        if self.loss_type == "COSINE":
+            loss = self.cossim(gt_feat, object_feat).mean()
+        else : # "PERCE"
+            pass
+        
+        return loss

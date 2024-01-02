@@ -1,25 +1,29 @@
 import os
+import random
 import numpy as np
 from tqdm import tqdm, trange
-
 import torch
 import torch.optim as optim
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
 # 
 from config import config_parser
-from set_multi_gpus import set_ddp
-from dataset import load_data
+from set_multi_gpus import set_ddp, myDDP
+from dataset import load_data, sampling_pose
 from metric import get_metric
-
 # 
 from scheduler import MipLRDecay
 from loss import NeRFLoss
 from model import MipNeRF
-
 # 
 from nerf_helper import *
 from nerf_render import *
+
+#
+import MAE
+from loss import MAELoss    
+
+FIX = True
 
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
@@ -90,9 +94,45 @@ def train(rank, world_size, args):
     # Set multi gpus
     model = DDP(model, device_ids=[rank])
     
-    # Loss func
+    # Loss func (Mip-NeRF)
     loss_func = NeRFLoss(args.coarse_weight_decay)
 
+    #################################
+    # MAE
+    if args.mae_weight != None :
+        # 1. Select few-shot
+        nerf_input = args.nerf_input
+        mae_input = args.mae_input
+        if FIX :
+            # Always same input index
+            i_train = np.arange(nerf_input) + mae_input
+        else :
+            i_train = random.sample(list(i_train), nerf_input)
+        
+        print("train idx", i_train)
+        print("Masking Ratio : %.4f"%(1-nerf_input/mae_input))
+        # 2. Build MAE (Only Encoder+a part)
+        encoder = MAE.__dict__[args.emb_type](args, H, W)
+
+        print("Load MAE model weight :", args.mae_weight)
+        ckpt = torch.load(args.mae_weight)
+        encoder.load_state_dict(ckpt['model_state_dict'], strict=False)
+
+        encoder = myDDP(encoder.to(rank), device_ids=[rank])
+        encoder.eval()
+
+        mae_input_images, mae_input_poses = MAE.MAE.mae_input_format(images[i_train], poses[i_train], nerf_input, mae_input, args.emb_type)
+        mae_input_images = mae_input_images.to(rank)      # [1, 3, N, H, W]
+        mae_input_poses = mae_input_poses.to(rank)        # [1, N, 4, 4]
+
+        with torch.no_grad() :
+            gt_feat = encoder(mae_input_images, mae_input_poses, mae_input, nerf_input)  #[1, N+1, D]
+        print(f"Feature vector shape : {gt_feat.shape}")
+        
+        # 3. MAE loss
+        mae_loss_func = MAELoss(args.mae_loss_func)
+
+    #################################
     # Move training data to GPU
     model.train()
     poses = torch.Tensor(poses).to(rank)
@@ -146,11 +186,34 @@ def train(rank, world_size, args):
         # 5. loss and update
         loss, (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
 
+        if args.mae_weight :
+            with torch.no_grad() :
+                sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
+                rgbs = render_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
+                                    near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc) # [N, 2, H, W, 3]
+                rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
+
+                # Coarse
+                rgbs_images, rgbs_poses = MAE.mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type)
+                rgbs_images = rgbs_images.to(rank)      # [1, 3, N, H, W] or # [1, 3, Hn, Wn]
+                rgbs_poses = rgbs_poses.to(rank)        # [1, N, 4, 4]
+                rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
+                object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
+                
+                # Fine
+                rgbs_images, rgbs_poses = MAE.mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
+                rgbs_images = rgbs_images.to(rank)      # [1, 3, N, H, W]
+                rgbs_poses = rgbs_poses.to(rank)        # [1, N, 4, 4]
+                rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
+                object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
+
+                loss += (object_loss_f * args.loss_lam_f) + (object_loss_c * args.loss_lam_c)
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         scheduler.step()
-
+        
         # Rest is logging
         if i%args.i_weights==0 and i > 0:
             path = os.path.join(basedir, expname, '{:06d}.tar'.format(i))

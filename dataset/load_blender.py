@@ -141,3 +141,14 @@ def load_nerf_synthetic_data(basedir, num_inputs=25, scale=4, testskip=8, white_
     test_poses = np.stack(test_poses, 0)    # [O, N, 4, 4]
 
     return train_imgs, train_poses, val_imgs, val_poses, test_imgs, test_poses, hwf, object_list
+
+def sampling_pose(N, theta_range, phi_range, radius_range) :
+    """ sampling with sorting angle
+    """
+    theta = np.random.uniform(*theta_range, N)
+    phi = np.random.uniform(*phi_range, N)
+    radius = np.random.uniform(*radius_range, N)
+
+    render_poses = torch.stack([pose_spherical(theta[i], phi[i], radius[i]) for i in range(N)], 0)    # [N, 4, 4]
+
+    return render_poses
