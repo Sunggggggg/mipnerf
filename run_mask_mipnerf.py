@@ -120,7 +120,7 @@ def train(rank, world_size, args):
         encoder = encoder(args, H, W).to(rank)
 
         print("Load MAE model weight :", args.mae_weight)
-        ckpt = torch.load(args.mae_weight)
+        ckpt = torch.load(args.mae_weight, map_location=rank)
         encoder.load_state_dict(ckpt['model_state_dict'], strict=False)
 
         encoder = myDDP(encoder, device_ids=[rank])
