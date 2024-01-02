@@ -26,7 +26,7 @@ def config_parser():
     parser.add_argument("--max_iters", type=int, default=400_000)
     parser.add_argument("--chunk", type=int, default=1024*16)
     parser.add_argument("--netchunk", type=int, default=1024*32)
-    parser.add_argument("--N_rand", type=int, default=1024*32, help='#of Sampling rays')
+    parser.add_argument("--N_rand", type=int, default=1024*3, help='#of Sampling rays')
     parser.add_argument("--no_ndc", action='store_true')
     parser.add_argument("--precrop_iters", type=int, default=500)
     parser.add_argument("--precrop_frac", type=float, default=.5) 
