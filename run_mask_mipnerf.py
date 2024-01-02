@@ -28,7 +28,6 @@ FIX = True
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
     set_ddp(rank, world_size)
-    torch.set_default_tensor_type(torch.cuda.FloatTensor)
     
     # Load dataset
     images, poses, render_poses, hwf, K, near, far, i_train, i_val, i_test \
