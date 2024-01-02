@@ -3,7 +3,7 @@ nerf_input = 8
 mae_input = 25
 
 # MAE
-mae_weight = weight/MAE/pre_trained_MAE.tar
+mae_weight = weights/MAE/model_5000.tar
 emb_type = IMAGE
 image_token = 16
 cam_pose_encoding = True
