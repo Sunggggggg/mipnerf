@@ -28,6 +28,7 @@ FIX = True
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
     set_ddp(rank, world_size)
+    torch.set_default_tensor_type(torch.cuda.FloatTensor)
     
     # Load dataset
     images, poses, render_poses, hwf, K, near, far, i_train, i_val, i_test \
@@ -126,8 +127,8 @@ def train(rank, world_size, args):
         encoder.eval()
 
         mae_input_images, mae_input_poses = mae_input_format(images[i_train], poses[i_train], nerf_input, mae_input, args.emb_type)
-        mae_input_images = mae_input_images.to(rank)      # [1, 3, N, H, W]
-        mae_input_poses = mae_input_poses.to(rank)        # [1, N, 4, 4]
+        mae_input_images = mae_input_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
+        mae_input_poses = mae_input_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
 
         with torch.no_grad() :
             gt_feat = encoder(mae_input_images, mae_input_poses, mae_input, nerf_input)  #[1, N+1, D]
@@ -199,15 +200,15 @@ def train(rank, world_size, args):
 
                 # Coarse
                 rgbs_images, rgbs_poses = mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type)
-                rgbs_images = rgbs_images.to(rank)      # [1, 3, N, H, W] or # [1, 3, Hn, Wn]
-                rgbs_poses = rgbs_poses.to(rank)        # [1, N, 4, 4]
+                rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W] or # [1, 3, Hn, Wn]
+                rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
                 
                 # Fine
                 rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
-                rgbs_images = rgbs_images.to(rank)      # [1, 3, N, H, W]
-                rgbs_poses = rgbs_poses.to(rank)        # [1, N, 4, 4]
+                rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
+                rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
 
