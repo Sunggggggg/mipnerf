@@ -126,7 +126,8 @@ def train(rank, world_size, args):
         encoder = myDDP(encoder, device_ids=[rank])
         encoder.eval()
 
-        mae_input_images, mae_input_poses = mae_input_format(images[i_train], poses[i_train], nerf_input, mae_input, args.emb_type)
+        train_images, train_poses = torch.tensor(images[i_train]), torch.tensor(poses[i_train])
+        mae_input_images, mae_input_poses = mae_input_format(train_images, train_poses, nerf_input, mae_input, args.emb_type)
         mae_input_images = mae_input_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
         mae_input_poses = mae_input_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
 
@@ -196,6 +197,7 @@ def train(rank, world_size, args):
                 sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
                 rgbs = render_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
                                     near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, progress_bar=False) # [N, 2, H, W, 3]
+                rgbs = torch.tensor(rgbs)
                 rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
 
                 # Coarse

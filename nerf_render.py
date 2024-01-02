@@ -57,6 +57,10 @@ def render_path(render_poses, hwf, K, chunk, mipnerf,
                 near=0., far=1., use_viewdirs=True, no_ndc=False, 
                 gt_imgs=None, savedir=None, render_factor=0, progress_bar=True):
     """ Rendering only
+    Args
+    render_poses (tensor) : [N, 4, 4]
+    
+    Return
     rgbs (numpy) float32 : [N, 2, H, W, 3]
     """
     H, W, focal = hwf
