@@ -83,9 +83,17 @@ def train(rank, world_size, args):
                            max_steps=args.max_iters, lr_delay_steps=args.lr_delay_steps, 
                            lr_delay_mult=args.lr_delay_mult)
 
+    # Training hyperparams
+    N_rand = args.N_rand
+    max_iters = args.max_iters + 1
+    start = 0 + 1
+
     # Load pretrained model
     if args.nerf_weight != None :
         print("Load MipNeRF model weight :", args.nerf_weight)
+        weight_name = args.nerf_weight.split('/')[-1]
+        start = int(weight_name[:-len('.tar')]) + 1
+
         ckpt = torch.load(args.nerf_weight) # 
 
         model.load_state_dict(ckpt['network_fn_state_dict'])
@@ -144,10 +152,6 @@ def train(rank, world_size, args):
     poses = torch.Tensor(poses).to(rank)
     render_poses = torch.Tensor(render_poses).to(rank)
 
-    # Training hyperparams
-    N_rand = args.N_rand
-    max_iters = args.max_iters + 1
-    start = 0 + 1
     for i in trange(start, max_iters):
         # 1. Random select image
         img_i = np.random.choice(i_train)
@@ -180,7 +184,7 @@ def train(rank, world_size, args):
         rays_o = rays_o[select_coords[:, 0], select_coords[:, 1]]   # (N_rand, 3)
         rays_d = rays_d[select_coords[:, 0], select_coords[:, 1]]   # (N_rand, 3)
         radii = radii[select_coords[:, 0], select_coords[:, 1]]     # (N_rand, 1)
-        lossmult = torch.ones_like(radii)                             # (N_rand, 1)
+        lossmult = torch.ones_like(radii)                             # (N_rand, 1) 
         batch_rays = torch.stack([rays_o, rays_d], 0)                 # (2, N_rand, 3)
         target = target[select_coords[:, 0], select_coords[:, 1]]     # (N_rand, 3)
         
@@ -190,7 +194,7 @@ def train(rank, world_size, args):
                                         use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
         
         # 5. loss and update
-        loss, (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
+        loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
 
         # MAE
         if args.mae_weight :
@@ -207,15 +211,17 @@ def train(rank, world_size, args):
                 rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                
+                object_loss_c *= args.loss_lam_c/lossmult.sum().to(rank)
+
                 # Fine
                 rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
                 rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
                 rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
+                object_loss_f *= args.loss_lam_f/lossmult.sum().to(rank)
 
-                loss += (object_loss_f * args.loss_lam_f) + (object_loss_c * args.loss_lam_c)
+                loss += (object_loss_f + object_loss_c)
 
         optimizer.zero_grad()
         loss.backward()
@@ -246,8 +252,10 @@ def train(rank, world_size, args):
                     file.write(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}, LPIPS : {eval_lpips:.3f}\n")
             print('Saved test set')
 
-        if i%args.i_print==0 and rank == 0:
-            tqdm.write(f"[TRAIN] Iter: {i} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.6f}")
+        if i%args.i_print==0 and rank == 0 :
+            tqdm.write(f"[MSE]      C_Loss: {mse_loss_c.item():.6f}\t f_Loss: {mse_loss_f.item():.6f} ")
+            tqdm.write(f"[COSINE]   C_Loss: {object_loss_c.item():.6f}\t f_Loss: {object_loss_f.item():.6f} ")
+            tqdm.write(f"[TRAIN]    Iter: {i} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f} LR: {float(scheduler.get_last_lr()[-1]):.6f}")
         
 if __name__ == '__main__' :
     parser = config_parser()

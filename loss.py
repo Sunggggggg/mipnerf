@@ -25,7 +25,7 @@ class NeRFLoss(torch.nn.modules.loss._Loss):
                 psnrs.append(mse_to_psnr(mse))
         losses = torch.stack(losses)
         loss = self.coarse_weight_decay * torch.sum(losses[:-1]) + losses[-1]
-        return loss, torch.Tensor(psnrs)
+        return loss, losses, torch.Tensor(psnrs)
 
 def mse_to_psnr(mse):
     return -10.0 * torch.log10(mse)

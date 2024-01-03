@@ -79,9 +79,17 @@ def train(rank, world_size, args):
                            max_steps=args.max_iters, lr_delay_steps=args.lr_delay_steps, 
                            lr_delay_mult=args.lr_delay_mult)
 
+    # Training hyperparams
+    N_rand = args.N_rand
+    max_iters = args.max_iters + 1
+    start = 0 + 1
+
     # Load pretrained model
     if args.nerf_weight != None :
         print("Load MipNeRF model weight :", args.nerf_weight)
+        weight_name = args.nerf_weight.split('/')[-1]
+        start = int(weight_name[:-len('.tar')]) + 1
+
         ckpt = torch.load(args.nerf_weight) # 
 
         model.load_state_dict(ckpt['network_fn_state_dict'])
@@ -98,10 +106,7 @@ def train(rank, world_size, args):
     poses = torch.Tensor(poses).to(rank)
     render_poses = torch.Tensor(render_poses).to(rank)
 
-    # Training hyperparams
-    N_rand = args.N_rand
-    max_iters = args.max_iters + 1
-    start = 0 + 1
+    
     for i in trange(start, max_iters):
         # 1. Random select image
         img_i = np.random.choice(i_train)

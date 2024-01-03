@@ -1,5 +1,8 @@
-1. load_data 함수 확인
-2. log 관리
-3. 그래프
-4. MAE 함수 정리 (Config 채우기)
-5. 다른 데이터셋 정리
+load_data 함수 확인
+그래프
+다른 데이터셋 정리
+MAE loss 계수 수정
+이어서 학습하는 코드 짜기 + MAE loss 계수 수정 
+
+
+RGB Loss 값 자체가 크게 작아졌다? - MAE loss 수정 필요?
