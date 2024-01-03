@@ -192,6 +192,7 @@ def train(rank, world_size, args):
         # 5. loss and update
         loss, (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
 
+        # MAE
         if args.mae_weight :
             with torch.no_grad() :
                 sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
@@ -239,7 +240,7 @@ def train(rank, world_size, args):
                 rgbs = render_path(poses[i_test], hwf, K, args.chunk, model, 
                                     near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
                                     gt_imgs=images[i_test], savedir=testsavedir)
-                eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], None, torch.device(rank))
+                eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], None, torch.device(rank))    # Use fine model
             if rank == 0 :
                 with open(logdir, 'a') as file :
                     file.write(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}, LPIPS : {eval_lpips:.3f}\n")
@@ -248,7 +249,6 @@ def train(rank, world_size, args):
         if i%args.i_print==0 and rank == 0:
             tqdm.write(f"[TRAIN] Iter: {i} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.6f}")
         
-
 if __name__ == '__main__' :
     parser = config_parser()
     args = parser.parse_args()

@@ -134,7 +134,7 @@ class MipNeRF(nn.Module):
                 t_vals, (mean, var) = sample_along_rays(rays_o, rays_d, radii, self.num_samples,
                                                         near, far, randomized=self.randomized, lindisp=False,
                                                         ray_shape=self.ray_shape)
-            else:  # fine grain sample/s
+            else:  # fine grain sample
                 t_vals, (mean, var) = resample_along_rays(rays_o, rays_d, radii,
                                                           t_vals.to(rays_o.device),
                                                           weights.to(rays_o.device), randomized=self.randomized,
