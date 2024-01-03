@@ -253,7 +253,7 @@ def train(rank, world_size, args):
             print('Saved test set')
 
         if i%args.i_print==0 and rank == 0 :
-            tqdm.write(f"[MSE]      C_Loss: {mse_loss_c.item():.6f}\t f_Loss: {mse_loss_f.item():.6f} ")
+            tqdm.write(f"[MSE]      C_Loss: {(mse_loss_c*args.coarse_weight_decay).item():.6f}\t f_Loss: {mse_loss_f.item():.6f} ")
             tqdm.write(f"[COSINE]   C_Loss: {object_loss_c.item():.6f}\t f_Loss: {object_loss_f.item():.6f} ")
             tqdm.write(f"[TRAIN]    Iter: {i} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f} LR: {float(scheduler.get_last_lr()[-1]):.6f}")
         
