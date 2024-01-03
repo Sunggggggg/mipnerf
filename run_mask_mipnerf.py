@@ -103,8 +103,8 @@ def train(rank, world_size, args):
     model = DDP(model, device_ids=[rank])
     
     # Loss func (Mip-NeRF)
-    loss_func = NeRFLoss(args.coarse_weight_decay)
-
+    # loss_func = MipNeRFLoss(args.coarse_weight_decay)
+    loss_func = NeRFLoss()
     #################################
     # MAE
     if args.mae_weight != None :
