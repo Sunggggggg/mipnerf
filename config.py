@@ -65,7 +65,7 @@ def config_parser():
     parser.add_argument('--decoder_num_heads', type=int,default=16)
     # MAE (loss)
     parser.add_argument("--mae_loss_func", type=str, default="COSINE")  # OR "PERCE"
-    parser.add_argument("--loss_lam_c", type=float, default=0.2)         # loss_lam_f * 0.1
+    parser.add_argument("--loss_lam_c", type=float, default=2.0)         # loss_lam_f * 0.1
     parser.add_argument("--loss_lam_f", type=float, default=2.0)        # 
     # logging/saving options
     parser.add_argument("--i_print", type=int, default=10)
