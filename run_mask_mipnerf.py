@@ -13,7 +13,7 @@ from dataset import load_data, sampling_pose
 from metric import get_metric
 # 
 from scheduler import MipLRDecay
-from loss import NeRFLoss
+from loss import MipNeRFLoss, NeRFLoss
 from model import MipNeRF
 # 
 from nerf_helper import *
