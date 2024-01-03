@@ -44,7 +44,7 @@ class NeRFLoss(torch.nn.modules.loss._Loss):
         losses = []
         psnrs = []
         for rgb in input:
-            mse = ((rgb - target[..., :3]) ** 2).sum()
+            mse = torch.mean((rgb - target[..., :3]) ** 2)
             losses.append(mse)
             with torch.no_grad():
                 psnrs.append(mse_to_psnr(mse))
