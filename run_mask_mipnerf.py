@@ -194,7 +194,8 @@ def train(rank, world_size, args):
                                         use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
         
         # 5. loss and update
-        loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
+        #loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
+        loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target)
 
         # MAE
         if args.mae_weight :
