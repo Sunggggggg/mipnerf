@@ -49,7 +49,7 @@ class NeRFLoss(torch.nn.modules.loss._Loss):
             with torch.no_grad():
                 psnrs.append(mse_to_psnr(mse))
         losses = torch.stack(losses)            # [2, 1]
-        loss = torch.sum(losses)
+        loss = losses[:-1] + losses[-1]
         return loss, losses, torch.Tensor(psnrs)
 
 
@@ -67,8 +67,15 @@ class MAELoss(torch.nn.modules.loss._Loss):
         gt_feat, object_feat : [1, N, D]
         """
         if self.loss_type == "COSINE":
-            loss = self.cossim(gt_feat, object_feat).mean()
+            gt_feat = gt_feat.mean(dim=1)[-1]           # [D]
+            object_feat = object_feat.mean(dim=1)[-1]
+
+            GT, OBJECT = torch.sqrt(torch.dot(gt_feat, gt_feat)), torch.sqrt(torch.dot(object_feat, object_feat))
+            G_dot_T = torch.dot(gt_feat, object_feat)
+
+            cos_theta =  G_dot_T / (GT*OBJECT)
+            object_loss = torch.arccos(cos_theta)
         else : # "PERCE"
             pass
         
-        return loss
+        return object_loss
