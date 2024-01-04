@@ -14,7 +14,7 @@ from metric import get_metric
 
 # 
 from scheduler import MipLRDecay
-from loss import NeRFLoss
+from loss import MipNeRFLoss
 from model import MipNeRF
 
 # 
@@ -48,7 +48,7 @@ def train(rank, world_size, args):
     os.makedirs(os.path.join(basedir, expname), exist_ok=True)
     f = os.path.join(basedir, expname, 'args.txt')
     with open(f, 'w') as file:
-        for arg in sorted(vars(args)):
+        for arg in vars(args):
             attr = getattr(args, arg)
             file.write('{} = {}\n'.format(arg, attr))
     # logging dir
@@ -99,7 +99,7 @@ def train(rank, world_size, args):
     model = DDP(model, device_ids=[rank])
     
     # Loss func
-    loss_func = NeRFLoss(args.coarse_weight_decay)
+    loss_func = MipNeRFLoss(args.coarse_weight_decay)
 
     # Move training data to GPU
     model.train()
