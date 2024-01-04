@@ -1,5 +1,5 @@
 # 
-datadir = /mnt2/SKY/dataset/nerf_synthetic/lego
+datadir = /mnt/SKY/dataset/nerf_synthetic/lego
 dataset = blender
 scale = 4
 testskip = 8
