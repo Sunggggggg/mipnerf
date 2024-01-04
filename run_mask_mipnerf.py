@@ -233,7 +233,7 @@ def train(rank, world_size, args):
         
         # Rest is logging
         if i%args.i_weights==0 and i > 0:
-            path = os.path.join(basedir, expname, '{:06d}.tar'.format(i))
+            path = os.path.join(basedir, expname, 'nerf_weights.tar')
             torch.save({
                 'network_fn_state_dict': model.module.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
@@ -257,7 +257,7 @@ def train(rank, world_size, args):
             print('Saved test set')
 
         if i%args.i_print==0 and rank == 0 :
-            tqdm.write(f"[MSE]      C_Loss: {(mse_loss_c).item():.6f}\t f_Loss: {mse_loss_f.item():.6f} ")
+            tqdm.write(f"[MSE]      C_Loss: {mse_loss_c.item():.6f}\t f_Loss: {mse_loss_f.item():.6f} ")
             tqdm.write(f"[COSINE]   C_Loss: {object_loss_c.item():.6f}\t f_Loss: {object_loss_f.item():.6f} ")
             #tqdm.write(f"[TRAIN]    Iter: {i} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f} LR: {float(scheduler.get_last_lr()[-1]):.6f}")
             tqdm.write(f"[TRAIN]    Iter: {i} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f}")
