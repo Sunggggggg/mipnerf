@@ -99,7 +99,7 @@ def train(rank, world_size, args):
 
         model.load_state_dict(ckpt['network_fn_state_dict'])
         optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+        #scheduler.load_state_dict(ckpt['scheduler_state_dict'])
 
     # Set multi gpus
     model = DDP(model, device_ids=[rank])
