@@ -1,5 +1,4 @@
 # Few-shot
-nerf_input = 8
 mae_input = 25
 
 # MAE
@@ -18,5 +17,5 @@ decoder_num_heads = 4
 
 # loss
 mae_loss_func = COSINE
-loss_lam_c = 0.2
+loss_lam_c = 2.0
 loss_lam_f = 2.0

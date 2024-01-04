@@ -7,7 +7,7 @@ class MipNeRFLoss(torch.nn.modules.loss._Loss):
 
     def forward(self, input, target, mask):
         """
-        Args
+        Args B: N_rays
         input       : [2, B, 3]  coarse+fine = 2
         target      : [B, 3]
         mask        : [B, 1]
@@ -49,7 +49,7 @@ class NeRFLoss(torch.nn.modules.loss._Loss):
             with torch.no_grad():
                 psnrs.append(mse_to_psnr(mse))
         losses = torch.stack(losses)            # [2, 1]
-        loss = losses[:-1] + losses[-1]
+        loss = torch.sum(losses[:-1]) + losses[-1]
         return loss, losses, torch.Tensor(psnrs)
 
 

@@ -31,11 +31,10 @@ def config_parser():
     parser.add_argument("--precrop_iters", type=int, default=500)
     parser.add_argument("--precrop_frac", type=float, default=.5) 
     # Model 
-    parser.add_argument("--use_viewdirs", action="store_false", help='use full 5D input instead of 3D')
-    parser.add_argument("--randomized", action="store_false")
+    parser.add_argument("--use_viewdirs", action="store_true", help='use full 5D input instead of 3D')
+    parser.add_argument("--randomized", action="store_true")
     parser.add_argument("--ray_shape", type=str, default="cone")        # should be "cylinder" if llff
-    parser.add_argument("--white_bkgd", action="store_false")           # should be False if using llff
-    parser.add_argument("--override_defaults", action="store_true")
+    parser.add_argument("--white_bkgd", action="store_true")           # should be False if using llff
     parser.add_argument("--num_levels", type=int, default=2)
     parser.add_argument("--N_samples", type=int, default=128)
     parser.add_argument("--hidden", type=int, default=256)
@@ -55,7 +54,7 @@ def config_parser():
     parser.add_argument("--mae_weight", type=str, default=None)
     parser.add_argument("--emb_type", type=str, default="IMAGE")        # OR "PATCH"
     parser.add_argument("--image_token", type=int, default=16)
-    parser.add_argument("--cam_pose_encoding", action='store_false')
+    parser.add_argument("--cam_pose_encoding", action='store_true')
     # MAE (Model)
     parser.add_argument('--embed_dim', type=int, default=1024)
     parser.add_argument('--depth', type=int, default=24)
