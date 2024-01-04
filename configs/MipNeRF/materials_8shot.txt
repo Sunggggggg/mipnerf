@@ -1,0 +1,30 @@
+# 
+datadir = /mnt/SKY/dataset/nerf_synthetic/materials
+dataset = blender
+scale = 4
+testskip = 8
+
+# 
+max_iters = 5000
+N_rand = 1024
+precrop_iters = 50
+precrop_frac = 0.7
+
+# MipNeRF
+use_viewdirs = True
+randomized = True
+ray_shape = cone
+white_bkgd = True
+num_levels = 2
+N_samples = 128
+density_noise = 0.0
+density_bias = -1.0
+rgb_padding = 0.001
+resample_padding = 0.01
+min_deg = 0
+max_deg = 16
+viewdirs_min_deg = 0
+viewdirs_max_deg = 4
+
+# Few-shot
+nerf_input = 8
