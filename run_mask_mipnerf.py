@@ -155,7 +155,6 @@ def train(rank, world_size, args):
     poses = torch.Tensor(poses).to(rank)
     render_poses = torch.Tensor(render_poses).to(rank)
 
-    loss_list, mse_list, oe_list = [], [], []
 
     for i in trange(start, max_iters):
         # 1. Random select image
@@ -217,7 +216,7 @@ def train(rank, world_size, args):
                 rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_c = object_loss_c * args.loss_lam_c * 0.1 / 64
+                object_loss_c = object_loss_c * args.loss_lam_c * 0.1 / 3
 
                 # Fine
                 rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
@@ -225,7 +224,7 @@ def train(rank, world_size, args):
                 rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_f = object_loss_f * args.loss_lam_f / 64
+                object_loss_f = object_loss_f * args.loss_lam_f / 3
 
                 loss += (object_loss_f + object_loss_c)
 
@@ -260,11 +259,17 @@ def train(rank, world_size, args):
             print('Saved test set')
 
         if i%args.i_print==0 and rank == 0 :
-            tqdm.write(f"[MSE]      C_Loss: {mse_loss_c.item():.6f}\t f_Loss: {mse_loss_f.item():.6f} ")
-            tqdm.write(f"[COSINE]   C_Loss: {object_loss_c.item():.6f}\t f_Loss: {object_loss_f.item():.6f} ")
+            tqdm.write(f"[MSE]      C_Loss: {mse_loss_c.item():.6f}\t f_Loss: {mse_loss_f.item():.6f}")
+            tqdm.write(f"[COSINE]   C_Loss: {object_loss_c.item():.6f}\t f_Loss: {object_loss_f.item():.6f}")
             #tqdm.write(f"[TRAIN]    Iter: {i} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f} LR: {float(scheduler.get_last_lr()[-1]):.6f}")
-            tqdm.write(f"[TRAIN]    Iter: {i} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f}")
+            tqdm.write(f"[TRAIN]    Iter: {i:06d} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f}")
         
+        # logging
+        with open(os.path.join(basedir, expname, 'log.txt')) as f :
+            f.write(f"[MSE]      C_Loss: {mse_loss_c.item():.6f}\t f_Loss: {mse_loss_f.item():.6f}\n")
+            f.write(f"[COSINE]   C_Loss: {object_loss_c.item():.6f}\t f_Loss: {object_loss_f.item():.6f}\n")
+            f.write(f"[TRAIN]    Iter: {i:06d} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f}\n")
+
 if __name__ == '__main__' :
     parser = config_parser()
     args = parser.parse_args()

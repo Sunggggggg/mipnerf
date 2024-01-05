@@ -4,7 +4,7 @@ object="lego hotdog materials chair drums ficus mic ship"
 
 for obj in $object
 do
-    exp=blender_${obj}
+    exp=MipNeRFLoss/blender_${obj}
     nerf_config=configs/MipNeRF/${obj}_8shot.txt
     mae_config=configs/MAE/mae.txt
 
