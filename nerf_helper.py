@@ -199,7 +199,7 @@ def sorted_piecewise_constant_pdf(bins, weights, num_samples, randomized):
     samples = bins_g0 + t * (bins_g1 - bins_g0)
     return samples
 
-def sample_along_rays(origins, directions, radii, num_samples, near, far, randomized, lindisp, ray_shape):
+def sample_along_rays(origins, directions, radii, num_samples, near, far, randomized, lindisp, ray_shape, model_type):
     """Stratified sampling along the rays.
 
     Args:
@@ -234,11 +234,15 @@ def sample_along_rays(origins, directions, radii, num_samples, near, far, random
     else:
         # Broadcast t_vals to make the returned shape consistent.
         t_vals = torch.broadcast_to(t_vals, [batch_size, num_samples + 1])
-    means, covs = cast_rays(t_vals, origins, directions, radii, ray_shape)
-    return t_vals, (means, covs)
 
-
-def resample_along_rays(origins, directions, radii, t_vals, weights, randomized, stop_grad, resample_padding, ray_shape):
+    if model_type == 'MipNeRF' :
+        means, covs = cast_rays(t_vals, origins, directions, radii, ray_shape)
+        return t_vals, (means, covs)
+    else :  # NeRF
+        pts = origins[..., None, :] + directions[...,None,:] * t_vals[...,:,None]
+        return t_vals, pts
+    
+def resample_along_rays(origins, directions, radii, t_vals, weights, randomized, stop_grad, resample_padding, ray_shape, model_type):
     """Resampling.
 
     Args:
@@ -284,5 +288,9 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, randomized,
             t_vals.shape[-1],
             randomized,
         )
-    means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)
-    return new_t_vals, (means, covs)
+    if model_type == 'MipNeRF' :
+        means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)
+        return new_t_vals, (means, covs)
+    else :  # NeRF
+        pts = origins[..., None, :] + directions[...,None,:] * new_t_vals[...,:,None]
+        return new_t_vals, pts
