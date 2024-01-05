@@ -265,7 +265,7 @@ def train(rank, world_size, args):
             tqdm.write(f"[TRAIN]    Iter: {i:06d} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f}")
         
         # logging
-        with open(os.path.join(basedir, expname, 'log.txt')) as f :
+        with open(os.path.join(basedir, expname, 'log.txt'), 'a') as f :
             f.write(f"[MSE]      C_Loss: {mse_loss_c.item():.6f}\t f_Loss: {mse_loss_f.item():.6f}\n")
             f.write(f"[COSINE]   C_Loss: {object_loss_c.item():.6f}\t f_Loss: {object_loss_f.item():.6f}\n")
             f.write(f"[TRAIN]    Iter: {i:06d} Total Loss: {loss.item():.6f} PSNR: {train_psnr_f.item():.4f}\n")
