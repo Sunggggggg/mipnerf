@@ -105,8 +105,9 @@ def train(rank, world_size, args):
     model = DDP(model, device_ids=[rank])
     
     # Loss func (Mip-NeRF)
-    #loss_func = MipNeRFLoss(args.coarse_weight_decay)
-    loss_func = NeRFLoss()
+    loss_func = MipNeRFLoss(args.coarse_weight_decay)
+    #loss_func = NeRFLoss()
+    
     #################################
     # MAE
     if args.mae_weight != None :
@@ -154,6 +155,8 @@ def train(rank, world_size, args):
     poses = torch.Tensor(poses).to(rank)
     render_poses = torch.Tensor(render_poses).to(rank)
 
+    loss_list, mse_list, oe_list = [], [], []
+
     for i in trange(start, max_iters):
         # 1. Random select image
         img_i = np.random.choice(i_train)
@@ -196,8 +199,8 @@ def train(rank, world_size, args):
                                         use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
         
         # 5. loss and update
-        #loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
-        loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target)
+        loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
+        #loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target)
 
         # MAE
         if args.mae_weight :
@@ -214,7 +217,7 @@ def train(rank, world_size, args):
                 rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_c *= args.loss_lam_c
+                object_loss_c = object_loss_c * args.loss_lam_c * 0.1 / lossmult.to(rank).sum()
 
                 # Fine
                 rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
@@ -222,7 +225,7 @@ def train(rank, world_size, args):
                 rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_f *= args.loss_lam_f
+                object_loss_f = object_loss_f * args.loss_lam_f / lossmult.to(rank).sum()
 
                 loss += (object_loss_f + object_loss_c)
 

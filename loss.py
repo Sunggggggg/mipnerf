@@ -1,6 +1,9 @@
 import torch
 
 class MipNeRFLoss(torch.nn.modules.loss._Loss):
+    """
+    MipeNeRFLoss = NeRFLoss / 3
+    """
     def __init__(self, coarse_weight_decay=0.1):
         super(MipNeRFLoss, self).__init__()
         self.coarse_weight_decay = coarse_weight_decay
