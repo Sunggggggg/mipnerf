@@ -237,7 +237,7 @@ def sample_along_rays(origins, directions, radii, num_samples, near, far, random
     means, covs = cast_rays(t_vals, origins, directions, radii, ray_shape)
     return t_vals, (means, covs)
     
-def resample_along_rays(origins, directions, radii, t_vals, weights, randomized, stop_grad, resample_padding, ray_shape, model_type):
+def resample_along_rays(origins, directions, radii, t_vals, weights, randomized, stop_grad, resample_padding, ray_shape):
     """Resampling.
 
     Args:
