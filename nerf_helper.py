@@ -199,7 +199,7 @@ def sorted_piecewise_constant_pdf(bins, weights, num_samples, randomized):
     samples = bins_g0 + t * (bins_g1 - bins_g0)
     return samples
 
-def sample_along_rays(origins, directions, radii, num_samples, near, far, randomized, lindisp, ray_shape, model_type):
+def sample_along_rays(origins, directions, radii, num_samples, near, far, randomized, lindisp, ray_shape):
     """Stratified sampling along the rays.
 
     Args:
@@ -234,13 +234,8 @@ def sample_along_rays(origins, directions, radii, num_samples, near, far, random
     else:
         # Broadcast t_vals to make the returned shape consistent.
         t_vals = torch.broadcast_to(t_vals, [batch_size, num_samples + 1])
-
-    if model_type == 'MipNeRF' :
-        means, covs = cast_rays(t_vals, origins, directions, radii, ray_shape)
-        return t_vals, (means, covs)
-    else :  # NeRF
-        pts = origins[..., None, :] + directions[...,None,:] * t_vals[...,:,None]
-        return t_vals, pts
+    means, covs = cast_rays(t_vals, origins, directions, radii, ray_shape)
+    return t_vals, (means, covs)
     
 def resample_along_rays(origins, directions, radii, t_vals, weights, randomized, stop_grad, resample_padding, ray_shape, model_type):
     """Resampling.
@@ -288,9 +283,75 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, randomized,
             t_vals.shape[-1],
             randomized,
         )
-    if model_type == 'MipNeRF' :
-        means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)
-        return new_t_vals, (means, covs)
-    else :  # NeRF
-        pts = origins[..., None, :] + directions[...,None,:] * new_t_vals[...,:,None]
-        return new_t_vals, pts
+    means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)
+    return new_t_vals, (means, covs)
+   
+def sample_along_rays_nerf(origins, directions, num_samples, near, far, randomized, lindisp):
+    batch_size = origins.shape[0]
+
+    t_vals = torch.linspace(0., 1., num_samples,  device=origins.device)
+    if lindisp:
+        t_vals = 1. / (1. / near * (1. - t_vals) + 1. / far * t_vals)
+    else:
+        t_vals = near * (1. - t_vals) + far * t_vals
+
+    if randomized:
+        mids = 0.5 * (t_vals[..., 1:] + t_vals[..., :-1])
+        upper = torch.cat([mids, t_vals[..., -1:]], -1)
+        lower = torch.cat([t_vals[..., :1], mids], -1)
+        t_rand = torch.rand(batch_size, num_samples, device=origins.device)
+        t_vals = lower + (upper - lower) * t_rand
+    else:
+        # Broadcast t_vals to make the returned shape consistent.
+        t_vals = torch.broadcast_to(t_vals, [batch_size, num_samples])
+    pts = origins[..., None, :] + directions[...,None,:] * t_vals[...,:,None]
+    return t_vals, pts
+    
+def resample_along_rays_nerf(origins, directions, t_vals, weights, randomized, stop_grad, resample_padding):
+    """Resampling.
+
+    Args:
+      origins: torch.tensor(float32), [batch_size, 3], ray origins.
+      directions: torch.tensor(float32), [batch_size, 3], ray directions.
+      radii: torch.tensor(float32), [batch_size, 3], ray radii.
+      t_vals: torch.tensor(float32), [batch_size, num_samples+1].
+      weights: torch.tensor(float32), weights for t_vals
+      randomized: bool, use randomized samples.
+      stop_grad: bool, whether or not to backprop through sampling.
+      resample_padding: float, added to the weights before normalizing.
+
+    Returns:
+      t_vals: torch.tensor(float32), [batch_size, num_samples+1].
+      points: torch.tensor(float32), [batch_size, num_samples, 3].
+    """
+    if stop_grad:
+        with torch.no_grad():
+            weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
+            weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
+            weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+
+            # Add in a constant (the sampling function will renormalize the PDF).
+            weights = weights_blur + resample_padding
+
+            new_t_vals = sorted_piecewise_constant_pdf(
+                t_vals,
+                weights,
+                t_vals.shape[-1],
+                randomized,
+            )
+    else:
+        weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
+        weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
+        weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+
+        # Add in a constant (the sampling function will renormalize the PDF).
+        weights = weights_blur + resample_padding
+
+        new_t_vals = sorted_piecewise_constant_pdf(
+            t_vals,
+            weights,
+            t_vals.shape[-1],
+            randomized,
+        )
+    pts = origins[..., None, :] + directions[...,None,:] * new_t_vals[...,:,None]
+    return new_t_vals, pts

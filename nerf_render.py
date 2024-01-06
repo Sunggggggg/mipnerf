@@ -137,3 +137,40 @@ def volumetric_rendering(rgb, density, t_vals, dirs, white_bkgd):
     if white_bkgd:
         comp_rgb = comp_rgb + (1. - acc[..., None])
     return comp_rgb, distance, acc, weights, alpha
+
+def volumetric_rendering_nerf(rgb, density, t_vals, dirs, white_bkgd):
+    """Volumetric Rendering Function.
+
+    Args:
+    rgb: torch.tensor(float32), color, [batch_size, num_samples, 3]
+    density: torch.tensor(float32), density, [batch_size, num_samples, 1].
+    t_vals: torch.tensor(float32), [batch_size, num_samples].
+    dirs: torch.tensor(float32), [batch_size, 3].
+    white_bkgd: bool.
+
+    Returns:
+    comp_rgb: torch.tensor(float32), [batch_size, 3].
+    disp: torch.tensor(float32), [batch_size].
+    acc: torch.tensor(float32), [batch_size].
+    weights: torch.tensor(float32), [batch_size, num_samples]
+    """
+    t_dists = t_vals[..., 1:] - t_vals[..., :-1]
+    t_dists = torch.cat([t_dists, torch.Tensor([1e10]).expand(t_dists[...,:1].shape)], -1)  # [N_rays, N_samples]
+    delta = t_dists * torch.linalg.norm(dirs[..., None, :], dim=-1)
+    # Note that we're quietly turning density from [..., 0] to [...].
+    density_delta = density[..., 0] * delta
+
+    alpha = 1 - torch.exp(-density_delta)
+    trans = torch.exp(-torch.cat([
+        torch.zeros_like(density_delta[..., :1]),
+        torch.cumsum(density_delta[..., :-1], dim=-1)
+    ], dim=-1))
+    weights = alpha * trans
+
+    comp_rgb = (weights[..., None] * rgb).sum(dim=-2)
+    acc = weights.sum(dim=-1)
+    distance = (weights * t_vals).sum(dim=-1) / acc
+    distance = torch.clamp(torch.nan_to_num(distance), t_vals[:, 0], t_vals[:, -1])
+    if white_bkgd:
+        comp_rgb = comp_rgb + (1. - acc[..., None])
+    return comp_rgb, distance, acc, weights, alpha
