@@ -274,12 +274,10 @@ class NeRF(nn.Module):
             if l == 0:  # coarse grain sample
                 t_vals, pts = sample_along_rays_nerf(rays_o, rays_d, self.num_samples,
                                                 near, far, randomized=self.randomized, lindisp=False)
-                print(t_vals.shape,pts.shape)
             else:  # fine grain sample
                 t_vals, pts = resample_along_rays_nerf(rays_o, rays_d, t_vals.to(rays_o.device),
                                                 weights.to(rays_o.device), randomized=self.randomized,
                                                 stop_grad=True, resample_padding=self.resample_padding)
-                print(t_vals.shape,pts.shape)
                 # t_vals : [N_rays, N_samples]
             
             # do integrated positional encoding of samples
@@ -331,8 +329,3 @@ def _xavier_init(model):
     for module in model.modules():
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
-
-x = torch.rand((64, 11))
-nerf = NeRF()
-
-nerf(x).shape
