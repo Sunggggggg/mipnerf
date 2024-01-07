@@ -42,7 +42,7 @@ def render_mipnerf(H, W, K, chunk=1024*16, netchunk=1024*32,
     
     all_comp_rgbs, all_distances, all_accs = [], [], []
     for i in range(0, rays.shape[0], chunk):
-        comp_rgbs, distances, accs = mipnerf(rays[i:i+chunk], netchunk)
+        comp_rgbs, distances, accs = mipnerf(rays[i:i+chunk])
         all_comp_rgbs.append(comp_rgbs)     # [2, chunk, 3]
         all_distances.append(distances)     # [2, chunk, 1]
         all_accs.append(accs)               # [2, chunk, 1]
@@ -87,7 +87,7 @@ def render_nerf(H, W, K, chunk=1024*16, netchunk=1024*32,
     
     all_comp_rgbs, all_distances, all_accs = [], [], []
     for i in range(0, rays.shape[0], chunk):
-        comp_rgbs, distances, accs = nerf(rays[i:i+chunk], netchunk)
+        comp_rgbs, distances, accs = nerf(rays[i:i+chunk])
         all_comp_rgbs.append(comp_rgbs)     # [2, chunk, 3]
         all_distances.append(distances)     # [2, chunk, 1]
         all_accs.append(accs)               # [2, chunk, 1]

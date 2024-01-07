@@ -116,7 +116,7 @@ class MipNeRF(nn.Module):
         _xavier_init(self)
         self.to(device)
 
-    def forward(self, ray_batch, netchunk):
+    def forward(self, ray_batch):
         comp_rgbs = []
         distances = []
         accs = []
