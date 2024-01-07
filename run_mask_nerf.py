@@ -71,7 +71,7 @@ def train(rank, world_size, args):
         max_deg=args.max_deg,
         viewdirs_min_deg=args.viewdirs_min_deg,
         viewdirs_max_deg=args.viewdirs_max_deg,
-        device=torch.device("cpu")
+        device=torch.device(rank)
     )
     # Optimizer and scheduler
     optimizer = optim.Adam(model.parameters(), lr=5e-4, betas=(0.9, 0.999))
