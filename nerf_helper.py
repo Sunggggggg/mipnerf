@@ -354,12 +354,9 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, N_importanc
     """
     t_vals_mid = 0.5 * (t_vals[..., 1:] + t_vals[..., :-1])     # [N_rays, N_samples]
     
-    weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)   # [N_rays, N_samples+2]
-    weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])          # [N_rays, N_samples+1]
-    weights = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])                    # [N_rays, N_samples+1]
     weights = weights + 1e-5 # prevent nans
-    pdf = weights / torch.sum(weights, -1, keepdim=True)        # [N_rays, N_samples+1]
-    cdf = torch.cumsum(pdf, -1)                                 # [N_rays, N_samples+1]
+    pdf = weights / torch.sum(weights, -1, keepdim=True)        # [N_rays, N_samples]
+    cdf = torch.cumsum(pdf, -1)                                 # [N_rays, N_samples]
     cdf = torch.cat([torch.zeros_like(cdf[...,:1]), cdf], -1)   # [N_rays, N_samples+1]
 
     # Take uniform samples
@@ -377,12 +374,12 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, N_importanc
     
     matched_shape = [inds_g.shape[0], inds_g.shape[1], cdf.shape[-1]]                   # [N_rays, N_importance, N_samples+1]
     cdf_g = torch.gather(cdf.unsqueeze(1).expand(matched_shape), 2, inds_g)             # [N_rays, N_importance, 2]
-    bins_g = torch.gather(t_vals_mid.unsqueeze(1).expand(matched_shape), 2, inds_g)     # [N_rays, N_importance, 2]
+    bins_g = torch.gather(t_vals.unsqueeze(1).expand(matched_shape), 2, inds_g)         # [N_rays, N_importance, 2]
 
     denom = (cdf_g[...,1]-cdf_g[...,0])
     denom = torch.where(denom<1e-5, torch.ones_like(denom), denom)
     t = (u-cdf_g[...,0])/denom
-    new_t_vals = bins_g[...,0] + t * (bins_g[...,1]-bins_g[...,0])                 # [N_rays, N_importance]
+    new_t_vals = bins_g[...,0] + t * (bins_g[...,1]-bins_g[...,0])                      # [N_rays, N_importance]
 
     new_t_vals, _ = torch.sort(torch.cat([t_vals, new_t_vals], -1), -1)                 # [N_rays, N_importance+N_samples]
     means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)          # 
