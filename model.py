@@ -328,8 +328,3 @@ def _xavier_init(model):
     for module in model.modules():
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
-
-
-x = torch.rand((64, 11))
-nerf = NeRF()
-nerf(x)

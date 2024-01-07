@@ -80,18 +80,19 @@ def train(rank, world_size, args):
     N_rand = args.N_rand
     max_iters = args.max_iters + 1
     start = 0 + 1
+    nerf_weight_path = 'nerf_weights.tar'
 
     # Load pretrained model
     if args.nerf_weight != None :
         print("Load MipNeRF model weight :", args.nerf_weight)
-        weight_name = args.nerf_weight.split('/')[-1]
-        start = int(weight_name[:-len('.tar')]) + 1
-
         ckpt = torch.load(args.nerf_weight) # 
 
         model.load_state_dict(ckpt['network_fn_state_dict'])
         optimizer.load_state_dict(ckpt['optimizer_state_dict'])
         #scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+
+        nerf_weight_path = 'nerf_tun_weights.tar'
+
 
     # Set multi gpus
     model = DDP(model, device_ids=[rank])
@@ -221,7 +222,7 @@ def train(rank, world_size, args):
     
         # Rest is logging
         if i%args.i_weights==0 and i > 0:
-            path = os.path.join(basedir, expname, 'nerf_weights.tar')
+            path = os.path.join(basedir, expname, nerf_weight_path)
             torch.save({
                 'network_fn_state_dict': model.module.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
