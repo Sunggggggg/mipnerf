@@ -167,7 +167,7 @@ def render_path_nerf(render_poses, hwf, K, chunk, nerf,
     if progress_bar :
         for i, c2w in enumerate(tqdm(render_poses)):
             rgb, _, _= render_nerf(H, W, K, chunk=chunk, 
-                                    mipnerf=nerf, c2w=c2w[:3,:4], near=near, far=far,
+                                    nerf=nerf, c2w=c2w[:3,:4], near=near, far=far,
                                     use_viewdirs=use_viewdirs, ndc=no_ndc)
             rgb = torch.reshape(rgb, [2, H, W, 3])
 
@@ -180,8 +180,8 @@ def render_path_nerf(render_poses, hwf, K, chunk, nerf,
     else : 
         for i, c2w in enumerate(render_poses):
             rgb, _, _= render_nerf(H, W, K, chunk=chunk, 
-                                            mipnerf=nerf, c2w=c2w[:3,:4], near=near, far=far,
-                                            use_viewdirs=use_viewdirs, ndc=no_ndc)
+                                    nerf=nerf, c2w=c2w[:3,:4], near=near, far=far,
+                                    use_viewdirs=use_viewdirs, ndc=no_ndc)
             rgb = torch.reshape(rgb, [2, H, W, 3])
 
             if savedir is not None:

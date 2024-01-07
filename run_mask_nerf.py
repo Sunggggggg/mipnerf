@@ -182,7 +182,7 @@ def train(rank, world_size, args):
         
         # 4. Rendering 
         comp_rgbs, _, _ = render_nerf(H, W, K, chunk=args.chunk, netchunk=args.netchunk,
-                                    mipnerf=model, rays=batch_rays, near=near, far=far,
+                                    nerf=model, rays=batch_rays, near=near, far=far,
                                     use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
         
         # 5. loss and update
