@@ -1,6 +1,8 @@
-from model import *
+import torch
+from model import NeRF
 
-B, N = 64, 128
-x = torch.rand((B, N, 3))
-IPE = PositionalEncoding(0, 16)
-print(IPE(x).shape)
+x = torch.rand((64, 11))
+nerf = NeRF()
+
+nerf(x)
+

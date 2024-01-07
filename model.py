@@ -212,7 +212,7 @@ class NeRF(nn.Module):
         self.hidden = hidden
         self.device = device
         self.return_raw = return_raw
-        self.density_activation = nn.Softplus()
+        self.density_activation = nn.ReLU(True)
 
         self.positional_encoding = PositionalEncoding(min_deg, max_deg)
         self.density_net0 = nn.Sequential(
@@ -308,7 +308,7 @@ class NeRF(nn.Module):
 
             # volumetric rendering
             rgb = raw_rgb
-            density = raw_density
+            density = self.density_activation(raw_density)
             comp_rgb, distance, acc, weights, alpha = volumetric_rendering_nerf(rgb, density, t_vals, rays_d.to(rgb.device), self.white_bkgd)
             comp_rgbs.append(comp_rgb)
             distances.append(distance)
@@ -328,3 +328,8 @@ def _xavier_init(model):
     for module in model.modules():
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
+
+
+x = torch.rand((64, 11))
+nerf = NeRF()
+nerf(x)

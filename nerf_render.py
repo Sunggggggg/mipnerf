@@ -247,17 +247,17 @@ def volumetric_rendering_nerf(rgb, density, t_vals, dirs, white_bkgd):
     acc: torch.tensor(float32), [batch_size].
     weights: torch.tensor(float32), [batch_size, num_samples]
     """
-    t_dists = t_vals[..., 1:] - t_vals[..., :-1]
+    t_dists = t_vals[..., 1:] - t_vals[..., :-1] # [N_rays, N_samples-1] 
     t_dists = torch.cat([t_dists, torch.Tensor([1e10]).expand(t_dists[...,:1].shape)], -1)  # [N_rays, N_samples]
     delta = t_dists * torch.linalg.norm(dirs[..., None, :], dim=-1)
     # Note that we're quietly turning density from [..., 0] to [...].
-    density_delta = density[..., 0] * delta
+    density_delta = density[..., 0] * delta     # [N_rays, N_samples, 1] * [N_rays, N_samples] = [N_rays, N_samples, 1]
 
-    alpha = 1 - torch.exp(-density_delta)
+    alpha = 1 - torch.exp(-density_delta)       # [N_rays, N_samples, 1]
     trans = torch.exp(-torch.cat([
         torch.zeros_like(density_delta[..., :1]),
         torch.cumsum(density_delta[..., :-1], dim=-1)
-    ], dim=-1))
+    ], dim=-1)) # [N_rays, N_samples, 1]
     weights = alpha * trans
 
     comp_rgb = (weights[..., None] * rgb).sum(dim=-2)

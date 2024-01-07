@@ -151,24 +151,27 @@ def cast_rays(t_vals, origins, directions, radii, ray_shape, diag=True):
     return means, covs
 
 def sorted_piecewise_constant_pdf(bins, weights, num_samples, randomized):
+    """
+    bins            : [B, N]
+    weights         : [B, N]
+    num_samples     : [N]
+    randomized      :
+    """
     # Pad each weight vector (only if necessary) to bring its sum to `eps`. This
     # avoids NaNs when the input is zeros or small, but has no effect otherwise.
     eps = 1e-5
-    weight_sum = torch.sum(weights, dim=-1, keepdim=True)
+    weight_sum = torch.sum(weights, dim=-1, keepdim=True)       # [B, 1]
     padding = torch.maximum(torch.zeros_like(weight_sum), eps - weight_sum)
     weights += padding / weights.shape[-1]
     weight_sum += padding
 
     # Compute the PDF and CDF for each weight vector, while ensuring that the CDF
     # starts with exactly 0 and ends with exactly 1.
-    pdf = weights / weight_sum
-    cdf = torch.cumsum(pdf[..., :-1], dim=-1)
+    pdf = weights / weight_sum          # [B, N]
+    cdf = torch.cumsum(pdf[..., :-1], dim=-1)   # [B, N-1]
     cdf = torch.minimum(torch.ones_like(cdf), cdf)
-    cdf = torch.cat([torch.zeros(list(cdf.shape[:-1]) + [1], device=cdf.device),
-                     cdf,
-                     torch.ones(list(cdf.shape[:-1]) + [1], device=cdf.device)],
-                    dim=-1)
-
+    cdf = torch.cat([torch.zeros(list(cdf.shape[:-1]) + [1], device=cdf.device), cdf], dim=-1) # [B, N+1] 
+ 
     # Draw uniform samples.
     if randomized:
         s = 1 / num_samples
@@ -313,9 +316,8 @@ def resample_along_rays_nerf(origins, directions, t_vals, weights, randomized, s
     Args:
       origins: torch.tensor(float32), [batch_size, 3], ray origins.
       directions: torch.tensor(float32), [batch_size, 3], ray directions.
-      radii: torch.tensor(float32), [batch_size, 3], ray radii.
-      t_vals: torch.tensor(float32), [batch_size, num_samples+1].
-      weights: torch.tensor(float32), weights for t_vals
+      t_vals: torch.tensor(float32), [batch_size, num_samples].
+      weights: torch.tensor(float32), [batch_size, num_samples], weights for t_vals
       randomized: bool, use randomized samples.
       stop_grad: bool, whether or not to backprop through sampling.
       resample_padding: float, added to the weights before normalizing.
@@ -326,9 +328,9 @@ def resample_along_rays_nerf(origins, directions, t_vals, weights, randomized, s
     """
     if stop_grad:
         with torch.no_grad():
-            weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
-            weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
-            weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+            weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)     # [batch_size, 1+num_samples+1]
+            weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])            # [batch_size, num_samples+1]
+            weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])                 # [batch_size, num_samples]
 
             # Add in a constant (the sampling function will renormalize the PDF).
             weights = weights_blur + resample_padding
