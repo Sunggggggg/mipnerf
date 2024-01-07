@@ -321,7 +321,6 @@ class NeRF(nn.Module):
             # Predicted RGB values for rays, Disparity map (inverse of depth), Accumulated opacity (alpha) along a ray
             return torch.stack(comp_rgbs), torch.stack(distances), torch.stack(accs)
 
-
 def _xavier_init(model):
     """
     Performs the Xavier weight initialization.
