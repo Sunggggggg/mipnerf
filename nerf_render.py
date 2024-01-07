@@ -210,8 +210,8 @@ def volumetric_rendering(rgb, density, t_vals, dirs, white_bkgd):
     acc: torch.tensor(float32), [batch_size].
     weights: torch.tensor(float32), [batch_size, num_samples]
     """
-    t_mids = 0.5 * (t_vals[..., :-1] + t_vals[..., 1:])
-    t_dists = t_vals[..., 1:] - t_vals[..., :-1]
+    t_mids = 0.5 * (t_vals[..., :-1] + t_vals[..., 1:])      # [N_rays, N_samples] 
+    t_dists = t_vals[..., 1:] - t_vals[..., :-1]             # [N_rays, N_samples] 
     delta = t_dists * torch.linalg.norm(dirs[..., None, :], dim=-1)
     # Note that we're quietly turning density from [..., 0] to [...].
     density_delta = density[..., 0] * delta
@@ -235,32 +235,25 @@ def volumetric_rendering_nerf(rgb, density, t_vals, dirs, white_bkgd):
     """Volumetric Rendering Function.
 
     Args:
-    rgb: torch.tensor(float32), color, [batch_size, num_samples, 3]
-    density: torch.tensor(float32), density, [batch_size, num_samples, 1].
-    t_vals: torch.tensor(float32), [batch_size, num_samples].
-    dirs: torch.tensor(float32), [batch_size, 3].
-    white_bkgd: bool.
-
-    Returns:
-    comp_rgb: torch.tensor(float32), [batch_size, 3].
-    disp: torch.tensor(float32), [batch_size].
-    acc: torch.tensor(float32), [batch_size].
-    weights: torch.tensor(float32), [batch_size, num_samples]
+    rgb         : [N_rays, N_samples, 3]
+    density     : [N_rays, N_samples, 1]    # Already activate
+    t_vals      : [N_rays, N_samples]
+    dirs        : [N_rays, 3]
+    white_bkgd  : 
     """
-    t_dists = t_vals[..., 1:] - t_vals[..., :-1] # [N_rays, N_samples-1] 
+    t_dists = t_vals[..., 1:] - t_vals[..., :-1]    # [N_rays, N_samples-1] 
     t_dists = torch.cat([t_dists, torch.Tensor([1e10]).expand(t_dists[...,:1].shape)], -1)  # [N_rays, N_samples]
-    delta = t_dists * torch.linalg.norm(dirs[..., None, :], dim=-1)
-    # Note that we're quietly turning density from [..., 0] to [...].
-    density_delta = density[..., 0] * delta     # [N_rays, N_samples, 1] * [N_rays, N_samples] = [N_rays, N_samples, 1]
-
-    alpha = 1 - torch.exp(-density_delta)       # [N_rays, N_samples, 1]
+    delta = t_dists * torch.linalg.norm(dirs[..., None, :], dim=-1)     # [N_rays, N_samples]
+    density_delta = density[..., 0] * delta     # [N_rays, N_samples] * [N_rays, N_samples] = [N_rays, N_samples]
+    
+    alpha = 1 - torch.exp(-density_delta)       # [N_rays, N_samples]
     trans = torch.exp(-torch.cat([
-        torch.zeros_like(density_delta[..., :1]),
-        torch.cumsum(density_delta[..., :-1], dim=-1)
-    ], dim=-1)) # [N_rays, N_samples, 1]
-    weights = alpha * trans
+        torch.zeros_like(density_delta[..., :1]),       # [N_rays, 1]
+        torch.cumsum(density_delta[..., :-1], dim=-1)   # [N_rays, N_samples-1]
+    ], dim=-1)) 
+    weights = alpha * trans                             # [N_rays, N_samples] 
 
-    comp_rgb = (weights[..., None] * rgb).sum(dim=-2)
+    comp_rgb = (weights[..., None] * rgb).sum(dim=-2)   # [N_rays, N_samples, 3] 
     acc = weights.sum(dim=-1)
     distance = (weights * t_vals).sum(dim=-1) / acc
     distance = torch.clamp(torch.nan_to_num(distance), t_vals[:, 0], t_vals[:, -1])

@@ -152,7 +152,7 @@ def cast_rays(t_vals, origins, directions, radii, ray_shape, diag=True):
 
 def sorted_piecewise_constant_pdf(bins, weights, num_samples, randomized):
     """
-    bins            : [B, N]
+    bins            : [B, N+1]
     weights         : [B, N]
     num_samples     : [N]
     randomized      :
@@ -295,56 +295,110 @@ def sample_along_rays(origins, directions, radii, num_samples, near, far, random
     means, covs = cast_rays(t_vals, origins, directions, radii, ray_shape)
     return t_vals, (means, covs)
     
-def resample_along_rays(origins, directions, radii, t_vals, weights, randomized, stop_grad, resample_padding, ray_shape):
+# def resample_along_rays(origins, directions, radii, t_vals, weights, randomized, stop_grad, resample_padding, ray_shape):
+#     """Resampling.
+
+#     Args:
+#       origins: torch.tensor(float32), [batch_size, 3], ray origins.
+#       directions: torch.tensor(float32), [batch_size, 3], ray directions.
+#       radii: torch.tensor(float32), [batch_size, 3], ray radii.
+#       t_vals: torch.tensor(float32), [batch_size, num_samples+1].
+#       weights: torch.tensor(float32), weights for t_vals
+#       randomized: bool, use randomized samples.
+#       stop_grad: bool, whether or not to backprop through sampling.
+#       resample_padding: float, added to the weights before normalizing.
+
+#     Returns:
+#       t_vals: torch.tensor(float32), [batch_size, num_samples+1].
+#       points: torch.tensor(float32), [batch_size, num_samples, 3].
+#     """
+#     if stop_grad:
+#         with torch.no_grad():
+#             weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
+#             weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
+#             weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+
+#             # Add in a constant (the sampling function will renormalize the PDF).
+#             weights = weights_blur + resample_padding
+
+#             new_t_vals = sorted_piecewise_constant_pdf(
+#                 t_vals,
+#                 weights,
+#                 t_vals.shape[-1],
+#                 randomized,
+#             )
+#     else:
+#         weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
+#         weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
+#         weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+
+#         # Add in a constant (the sampling function will renormalize the PDF).
+#         weights = weights_blur + resample_padding
+
+#         new_t_vals = sorted_piecewise_constant_pdf(
+#             t_vals,
+#             weights,
+#             t_vals.shape[-1],
+#             randomized,
+#         )
+#     means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)
+#     return new_t_vals, (means, covs)
+
+def resample_along_rays(origins, directions, radii, t_vals, weights, N_importance, randomized, ray_shape):
     """Resampling.
-
-    Args:
-      origins: torch.tensor(float32), [batch_size, 3], ray origins.
-      directions: torch.tensor(float32), [batch_size, 3], ray directions.
-      radii: torch.tensor(float32), [batch_size, 3], ray radii.
-      t_vals: torch.tensor(float32), [batch_size, num_samples+1].
-      weights: torch.tensor(float32), weights for t_vals
-      randomized: bool, use randomized samples.
-      stop_grad: bool, whether or not to backprop through sampling.
-      resample_padding: float, added to the weights before normalizing.
-
-    Returns:
-      t_vals: torch.tensor(float32), [batch_size, num_samples+1].
-      points: torch.tensor(float32), [batch_size, num_samples, 3].
+    origins         : [N_rays, 3]
+    directions      : [N_rays, 3]
+    t_vals          : [N_rays, N_samples+1]
+    N_importance    : 
+    weights         : [N_rays, N_samples]
     """
-    if stop_grad:
-        with torch.no_grad():
-            weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
-            weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
-            weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+    t_vals_mid = 0.5 * (t_vals[..., 1:] + t_vals[..., :-1])     # [N_rays, N_samples]
+    
+    weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)   # [N_rays, N_samples+2]
+    weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])          # [N_rays, N_samples+1]
+    weights = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])                    # [N_rays, N_samples+1]
+    weights = weights + 1e-5 # prevent nans
+    pdf = weights / torch.sum(weights, -1, keepdim=True)        # [N_rays, N_samples+1]
+    cdf = torch.cumsum(pdf, -1)                                 # [N_rays, N_samples+1]
+    cdf = torch.cat([torch.zeros_like(cdf[...,:1]), cdf], -1)   # [N_rays, N_samples+1]
 
-            # Add in a constant (the sampling function will renormalize the PDF).
-            weights = weights_blur + resample_padding
-
-            new_t_vals = sorted_piecewise_constant_pdf(
-                t_vals,
-                weights,
-                t_vals.shape[-1],
-                randomized,
-            )
+    # Take uniform samples
+    if randomized :
+        u = torch.linspace(0., 1., steps=N_importance)             # 
+        u = u.expand(list(cdf.shape[:-1]) + [N_importance])        # [N_rays, N_importance] 
     else:
-        weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
-        weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
-        weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+        u = torch.rand(list(cdf.shape[:-1]) + [N_importance])      # [N_rays, N_importance] 
 
-        # Add in a constant (the sampling function will renormalize the PDF).
-        weights = weights_blur + resample_padding
+    u = u.contiguous()
+    inds = torch.searchsorted(cdf, u, right=True)                   # [N_rays, N_importance] 
+    below = torch.max(torch.zeros_like(inds-1), inds-1)
+    above = torch.min((cdf.shape[-1]-1) * torch.ones_like(inds), inds)
+    inds_g = torch.stack([below, above], -1)  # [N_rays, N_importance, 2]
+    
+    matched_shape = [inds_g.shape[0], inds_g.shape[1], cdf.shape[-1]]                   # [N_rays, N_importance, N_samples+1]
+    cdf_g = torch.gather(cdf.unsqueeze(1).expand(matched_shape), 2, inds_g)             # [N_rays, N_importance, 2]
+    bins_g = torch.gather(t_vals_mid.unsqueeze(1).expand(matched_shape), 2, inds_g)     # [N_rays, N_importance, 2]
 
-        new_t_vals = sorted_piecewise_constant_pdf(
-            t_vals,
-            weights,
-            t_vals.shape[-1],
-            randomized,
-        )
-    means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)
+    denom = (cdf_g[...,1]-cdf_g[...,0])
+    denom = torch.where(denom<1e-5, torch.ones_like(denom), denom)
+    t = (u-cdf_g[...,0])/denom
+    new_t_vals = bins_g[...,0] + t * (bins_g[...,1]-bins_g[...,0])                 # [N_rays, N_importance]
+
+    new_t_vals, _ = torch.sort(torch.cat([t_vals, new_t_vals], -1), -1)                 # [N_rays, N_importance+N_samples]
+    means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)          # 
     return new_t_vals, (means, covs)
-   
+
 def sample_along_rays_nerf(origins, directions, num_samples, near, far, randomized, lindisp):
+    """
+    origins         : [N_rays, 3]
+    directions      : [N_rays, 3]
+    num_samples     : N_samples
+    near, far       : [N_rays, 1]
+
+    Return
+    t_vals          : [N_rays, N_samples]
+    pts             : [N_rays, N_samples, 3]
+    """
     batch_size = origins.shape[0]
 
     t_vals = torch.linspace(0., 1., num_samples,  device=origins.device)
@@ -362,53 +416,47 @@ def sample_along_rays_nerf(origins, directions, num_samples, near, far, randomiz
     else:
         # Broadcast t_vals to make the returned shape consistent.
         t_vals = torch.broadcast_to(t_vals, [batch_size, num_samples])
-    pts = origins[..., None, :] + directions[...,None,:] * t_vals[...,:,None]
+    pts = origins[..., None, :] + directions[...,None,:] * t_vals[...,:,None] 
     return t_vals, pts
     
-def resample_along_rays_nerf(origins, directions, t_vals, weights, randomized, stop_grad, resample_padding):
+def resample_along_rays_nerf(origins, directions, t_vals, weights, N_importance, randomized):
     """Resampling.
-
-    Args:
-      origins: torch.tensor(float32), [batch_size, 3], ray origins.
-      directions: torch.tensor(float32), [batch_size, 3], ray directions.
-      t_vals: torch.tensor(float32), [batch_size, num_samples].
-      weights: torch.tensor(float32), [batch_size, num_samples], weights for t_vals
-      randomized: bool, use randomized samples.
-      stop_grad: bool, whether or not to backprop through sampling.
-      resample_padding: float, added to the weights before normalizing.
-
-    Returns:
-      t_vals: torch.tensor(float32), [batch_size, num_samples+1].
-      points: torch.tensor(float32), [batch_size, num_samples, 3].
+    origins         : [N_rays, 3]
+    directions      : [N_rays, 3]
+    t_vals          : [N_rays, N_samples]
+    N_importance    : 
+    weights         : [N_rays, N_samples]
     """
-    if stop_grad:
-        with torch.no_grad():
-            weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)     # [batch_size, 1+num_samples+1]
-            weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])            # [batch_size, num_samples+1]
-            weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])                 # [batch_size, num_samples]
+    t_vals_mid = 0.5 * (t_vals[..., 1:] + t_vals[..., :-1])     # [N_rays, N_samples-1]
+    weights = weights[..., 1:-1]                                # [N_rays, N_samples-2], depadding
 
-            # Add in a constant (the sampling function will renormalize the PDF).
-            weights = weights_blur + resample_padding
+    weights = weights + 1e-5 # prevent nans
+    pdf = weights / torch.sum(weights, -1, keepdim=True)        # [N_rays, N_samples-2]
+    cdf = torch.cumsum(pdf, -1)                                 # [N_rays, N_samples-2]
+    cdf = torch.cat([torch.zeros_like(cdf[...,:1]), cdf], -1)   # [N_rays, N_samples-1]
 
-            new_t_vals = sorted_piecewise_constant_pdf_nerf(
-                t_vals,
-                weights,
-                t_vals.shape[-1],
-                randomized,
-            )
+    # Take uniform samples
+    if randomized :
+        u = torch.linspace(0., 1., steps=N_importance)             # 
+        u = u.expand(list(cdf.shape[:-1]) + [N_importance])        # [N_rays, N_importance] 
     else:
-        weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
-        weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
-        weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+        u = torch.rand(list(cdf.shape[:-1]) + [N_importance])      # [N_rays, N_importance] 
 
-        # Add in a constant (the sampling function will renormalize the PDF).
-        weights = weights_blur + resample_padding
+    u = u.contiguous()
+    inds = torch.searchsorted(cdf, u, right=True)                   # [N_rays, N_importance] 
+    below = torch.max(torch.zeros_like(inds-1), inds-1)
+    above = torch.min((cdf.shape[-1]-1) * torch.ones_like(inds), inds)
+    inds_g = torch.stack([below, above], -1)  # [N_rays, N_importance, 2]
 
-        new_t_vals = sorted_piecewise_constant_pdf_nerf(
-            t_vals,
-            weights,
-            t_vals.shape[-1],
-            randomized,
-        )
-    pts = origins[..., None, :] + directions[...,None,:] * new_t_vals[...,:,None]
+    matched_shape = [inds_g.shape[0], inds_g.shape[1], cdf.shape[-1]]                   # [N_rays, N_importance, N_samples-1]
+    cdf_g = torch.gather(cdf.unsqueeze(1).expand(matched_shape), 2, inds_g)             # [N_rays, N_importance, 2]
+    bins_g = torch.gather(t_vals_mid.unsqueeze(1).expand(matched_shape), 2, inds_g)     # [N_rays, N_importance, 2]
+
+    denom = (cdf_g[...,1]-cdf_g[...,0])
+    denom = torch.where(denom<1e-5, torch.ones_like(denom), denom)
+    t = (u-cdf_g[...,0])/denom
+    new_t_vals = bins_g[...,0] + t * (bins_g[...,1]-bins_g[...,0])                 # [N_rays, N_importance]
+
+    new_t_vals, _ = torch.sort(torch.cat([t_vals, new_t_vals], -1), -1)                 # [N_rays, N_importance+N_samples]
+    pts = origins[..., None, :] + directions[...,None,:] * new_t_vals[...,:,None]       # [N_rays, N_importance+N_samples, 3]
     return new_t_vals, pts
