@@ -23,7 +23,7 @@ from nerf_render import *
 from MAE import IMAGE, PATCH, mae_input_format
 from loss import MAELoss    
 
-FIX = True  # Fix nerf training images
+FIX = False  # Fix nerf training images
 
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
@@ -121,6 +121,9 @@ def train(rank, world_size, args):
         else :
             i_train = random.sample(list(i_train), nerf_input)
         
+        with open(os.path.join(basedir, expname, 'input.txt')) as f :
+            f.write(f"{i_train}")
+
         print("train idx", i_train)
         print("Masking Ratio : %.4f"%(1-nerf_input/mae_input))
         # 2. Build MAE (Only Encoder+a part)
