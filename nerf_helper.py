@@ -152,34 +152,33 @@ def cast_rays(t_vals, origins, directions, radii, ray_shape, diag=True):
 
 def sorted_piecewise_constant_pdf(bins, weights, num_samples, randomized):
     """
-    bins            : [B, N+1]
-    weights         : [B, N]
-    num_samples     : [N]
-    randomized      :
+    bins            : [N_rays, N_samples + 1]
+    weights         : [N_rays, N_samples]
+    num_samples     : [N_importance]
     """
     # Pad each weight vector (only if necessary) to bring its sum to `eps`. This
     # avoids NaNs when the input is zeros or small, but has no effect otherwise.
     eps = 1e-5
-    weight_sum = torch.sum(weights, dim=-1, keepdim=True)       # [B, 1]
-    padding = torch.maximum(torch.zeros_like(weight_sum), eps - weight_sum)
+    weight_sum = torch.sum(weights, dim=-1, keepdim=True)                       # [N_rays, N_samples]
+    padding = torch.maximum(torch.zeros_like(weight_sum), eps - weight_sum)     # 
     weights += padding / weights.shape[-1]
     weight_sum += padding
 
     # Compute the PDF and CDF for each weight vector, while ensuring that the CDF
     # starts with exactly 0 and ends with exactly 1.
-    pdf = weights / weight_sum          # [B, N]
-    cdf = torch.cumsum(pdf[..., :-1], dim=-1)   # [B, N-1]
+    pdf = weights / weight_sum                      # [N_rays, N_samples]
+    cdf = torch.cumsum(pdf[..., :-1], dim=-1)       # [N_rays, N_samples-1]
     cdf = torch.minimum(torch.ones_like(cdf), cdf)
     cdf = torch.cat([torch.zeros(list(cdf.shape[:-1]) + [1], device=cdf.device),
                      cdf,
                      torch.ones(list(cdf.shape[:-1]) + [1], device=cdf.device)],
-                    dim=-1)
+                    dim=-1) # [N_rays, N_samples+1]
  
     # Draw uniform samples.
     if randomized:
         s = 1 / num_samples
-        u = (torch.arange(num_samples, device=cdf.device) * s)[None, ...]
-        u = u + u + torch.empty(list(cdf.shape[:-1]) + [num_samples], device=cdf.device).uniform_(to=(s - torch.finfo(torch.float32).eps))
+        u = (torch.arange(num_samples, device=cdf.device) * s)[None, ...]   # [1, N_importance]
+        u = u + torch.empty(list(cdf.shape[:-1]) + [num_samples], device=cdf.device).uniform_(to=(s - torch.finfo(torch.float32).eps)) # [N_rays, N_importance]
         # `u` is in [0, 1) --- it can be zero, but it can never be 1.
         u = torch.minimum(u, torch.full_like(u, 1. - torch.finfo(torch.float32).eps, device=u.device))
     else:
@@ -189,59 +188,7 @@ def sorted_piecewise_constant_pdf(bins, weights, num_samples, randomized):
 
     # Identify the location in `cdf` that corresponds to a random sample.
     # The final `True` index in `mask` will be the start of the sampled interval.
-    mask = u[..., None, :] >= cdf[..., :, None]
-
-    def find_interval(x):
-        # Grab the value where `mask` switches from True to False, and vice versa.
-        # This approach takes advantage of the fact that `x` is sorted.
-        x0, _ = torch.max(torch.where(mask, x[..., None], x[..., :1, None]), -2)
-        x1, _ = torch.min(torch.where(~mask, x[..., None], x[..., -1:, None]), -2)
-        return x0, x1
-
-    bins_g0, bins_g1 = find_interval(bins)
-    cdf_g0, cdf_g1 = find_interval(cdf)
-
-    t = torch.clip(torch.nan_to_num((u - cdf_g0) / (cdf_g1 - cdf_g0), 0), 0, 1)
-    samples = bins_g0 + t * (bins_g1 - bins_g0)
-    return samples
-
-def sorted_piecewise_constant_pdf_nerf(bins, weights, num_samples, randomized):
-    """
-    bins            : [B, N]
-    weights         : [B, N]
-    num_samples     : [N]
-    randomized      :
-    """
-    # Pad each weight vector (only if necessary) to bring its sum to `eps`. This
-    # avoids NaNs when the input is zeros or small, but has no effect otherwise.
-    eps = 1e-5
-    weight_sum = torch.sum(weights, dim=-1, keepdim=True)       # [B, 1]
-    padding = torch.maximum(torch.zeros_like(weight_sum), eps - weight_sum)
-    weights += padding / weights.shape[-1]
-    weight_sum += padding
-
-    # Compute the PDF and CDF for each weight vector, while ensuring that the CDF
-    # starts with exactly 0 and ends with exactly 1.
-    pdf = weights / weight_sum          # [B, N]
-    cdf = torch.cumsum(pdf[..., :-1], dim=-1)   # [B, N-1]
-    cdf = torch.minimum(torch.ones_like(cdf), cdf)
-    cdf = torch.cat([torch.zeros(list(cdf.shape[:-1]) + [1], device=cdf.device), cdf], dim=-1) # [B, N+1] 
- 
-    # Draw uniform samples.
-    if randomized:
-        s = 1 / num_samples
-        u = (torch.arange(num_samples, device=cdf.device) * s)[None, ...]
-        u = u + u + torch.empty(list(cdf.shape[:-1]) + [num_samples], device=cdf.device).uniform_(to=(s - torch.finfo(torch.float32).eps))
-        # `u` is in [0, 1) --- it can be zero, but it can never be 1.
-        u = torch.minimum(u, torch.full_like(u, 1. - torch.finfo(torch.float32).eps, device=u.device))
-    else:
-        # Match the behavior of jax.random.uniform() by spanning [0, 1-eps].
-        u = torch.linspace(0., 1. - torch.finfo(torch.float32).eps, num_samples, device=cdf.device)
-        u = torch.broadcast_to(u, list(cdf.shape[:-1]) + [num_samples])
-
-    # Identify the location in `cdf` that corresponds to a random sample.
-    # The final `True` index in `mask` will be the start of the sampled interval.
-    mask = u[..., None, :] >= cdf[..., :, None]
+    mask = u[..., None, :] >= cdf[..., :, None]     # [N_rays, 1, N_importance] >= [N_rays, N_samples+1, 1]
 
     def find_interval(x):
         # Grab the value where `mask` switches from True to False, and vice versa.
@@ -295,28 +242,21 @@ def sample_along_rays(origins, directions, radii, num_samples, near, far, random
     means, covs = cast_rays(t_vals, origins, directions, radii, ray_shape)
     return t_vals, (means, covs)
     
-def resample_along_rays(origins, directions, radii, t_vals, weights, randomized, stop_grad, resample_padding, ray_shape):
+def resample_along_rays(origins, directions, radii, t_vals, weights, N_importance, randomized, stop_grad, resample_padding, ray_shape):
     """Resampling.
 
-    Args:
-      origins: torch.tensor(float32), [batch_size, 3], ray origins.
-      directions: torch.tensor(float32), [batch_size, 3], ray directions.
-      radii: torch.tensor(float32), [batch_size, 3], ray radii.
-      t_vals: torch.tensor(float32), [batch_size, num_samples+1].
-      weights: torch.tensor(float32), weights for t_vals
-      randomized: bool, use randomized samples.
-      stop_grad: bool, whether or not to backprop through sampling.
-      resample_padding: float, added to the weights before normalizing.
-
-    Returns:
-      t_vals: torch.tensor(float32), [batch_size, num_samples+1].
-      points: torch.tensor(float32), [batch_size, num_samples, 3].
+    Args :
+    origin      : [N_rays, 3]
+    directions  : [N_rays, 3]
+    radii       : [N_rays, 1]
+    t_vals      : [N_rays, N_samples + 1]
+    weights     : [N_rays, N_samples]
     """
     if stop_grad:
         with torch.no_grad():
-            weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)
-            weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])
-            weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])
+            weights_pad = torch.cat([weights[..., :1], weights, weights[..., -1:]], dim=-1)     # [N_rays, N_samples+2] 
+            weights_max = torch.maximum(weights_pad[..., :-1], weights_pad[..., 1:])            # [N_rays, N_samples+1]
+            weights_blur = 0.5 * (weights_max[..., :-1] + weights_max[..., 1:])                 # [N_rays, N_samples]
 
             # Add in a constant (the sampling function will renormalize the PDF).
             weights = weights_blur + resample_padding
@@ -324,7 +264,7 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, randomized,
             new_t_vals = sorted_piecewise_constant_pdf(
                 t_vals,
                 weights,
-                t_vals.shape[-1],
+                N_importance,
                 randomized,
             )
     else:
@@ -338,10 +278,11 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, randomized,
         new_t_vals = sorted_piecewise_constant_pdf(
             t_vals,
             weights,
-            t_vals.shape[-1],
+            N_importance,
             randomized,
         )
-    means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)
+    new_t_vals, _ = torch.sort(torch.cat([t_vals, new_t_vals], -1), -1)         # [N_rays, N_samples + N_importance + 1]
+    means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)  
     return new_t_vals, (means, covs)
 
 # def resample_along_rays(origins, directions, radii, t_vals, weights, N_importance, randomized, ray_shape):
@@ -353,6 +294,7 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, randomized,
 #     weights         : [N_rays, N_samples]
 #     """
 #     t_vals_mid = 0.5 * (t_vals[..., 1:] + t_vals[..., :-1])     # [N_rays, N_samples]
+    
     
 #     weights = weights + 1e-5 # prevent nans
 #     pdf = weights / torch.sum(weights, -1, keepdim=True)        # [N_rays, N_samples]
@@ -426,7 +368,7 @@ def resample_along_rays_nerf(origins, directions, t_vals, weights, N_importance,
     """
     t_vals_mid = 0.5 * (t_vals[..., 1:] + t_vals[..., :-1])     # [N_rays, N_samples-1]
     weights = weights[..., 1:-1]                                # [N_rays, N_samples-2], depadding
-
+    
     weights = weights + 1e-5 # prevent nans
     pdf = weights / torch.sum(weights, -1, keepdim=True)        # [N_rays, N_samples-2]
     cdf = torch.cumsum(pdf, -1)                                 # [N_rays, N_samples-2]

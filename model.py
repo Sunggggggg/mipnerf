@@ -132,18 +132,19 @@ class MipNeRF(nn.Module):
         for l in range(self.num_levels):
             # sample
             if l == 0:
-                #num_samples = self.N_samples
+                num_samples = self.N_samples
+                # t_vals : [N_rays, num_samples+1]
+                # mean, var : [N_rays, N_samples, 3]
                 t_vals, (mean, var) = sample_along_rays(rays_o, rays_d, radii, self.N_samples,
                                                         near, far, randomized=self.randomized, lindisp=False,
                                                         ray_shape=self.ray_shape)
             else:
-                #num_samples = self.N_samples + self.N_importance
+                num_samples = self.N_importance + self.N_samples
+                # t_vals : [N_rays, num_samples+1]
+                # mean, var : [N_rays, N_samples, 3]
                 t_vals, (mean, var) = resample_along_rays(rays_o, rays_d, radii, t_vals.to(rays_o.device),
-                                                          weights.to(rays_o.device), randomized=self.randomized,
-                                                          stop_grad=True, resample_padding=self.resample_padding,
-                                                          ray_shape=self.ray_shape)
-            # t_vals : [N_rays, N_samples+1]
-            # mean, var : [N_rays, N_samples, 3]
+                                                          weights.to(rays_o.device), self.N_importance, randomized=self.randomized,
+                                                          stop_grad=True, resample_padding=self.resample_padding, ray_shape=self.ray_shape)
             
             # do integrated positional encoding of samples
             samples_enc = self.positional_encoding(mean, var)[0]
@@ -153,19 +154,19 @@ class MipNeRF(nn.Module):
             new_encodings = self.density_net0(samples_enc)                  # [N_rays*N_samples, 256]
             new_encodings = torch.cat((new_encodings, samples_enc), -1)     # [N_rays*N_samples, 256+96]
             new_encodings = self.density_net1(new_encodings)                # [N_rays*N_samples, 256]
-            raw_density = self.final_density(new_encodings).reshape((-1, self.N_samples, 1)) # [N_rays, N_samples, 1]
+            raw_density = self.final_density(new_encodings).reshape((-1, num_samples, 1)) # [N_rays, N_samples, 1]
             
             # predict rgb
             if self.use_viewdirs:
                 #  do positional encoding of viewdirs
                 viewdirs = self.viewdirs_encoding(view_dirs.to(self.device))             # [N_rays, 27]
                 viewdirs = torch.cat((viewdirs, view_dirs.to(self.device)), -1)          # [N_rays, 30]
-                viewdirs = torch.tile(viewdirs[:, None, :], (1, self.N_samples, 1))    # [N_rays, N_samples, 30]
+                viewdirs = torch.tile(viewdirs[:, None, :], (1, num_samples, 1))    # [N_rays, N_samples, 30]
                 viewdirs = viewdirs.reshape((-1, viewdirs.shape[-1]))                    # [N_rays*N_samples, 30]
                 new_encodings = self.rgb_net0(new_encodings)                             # [N_rays*N_samples, 256]
                 new_encodings = torch.cat((new_encodings, viewdirs), -1)                 # [N_rays*N_samples, 30+256]
                 new_encodings = self.rgb_net1(new_encodings)                             # [N_rays*N_samples, 286]
-            raw_rgb = self.final_rgb(new_encodings).reshape((-1, self.N_samples, 3))   # [N_rays, N_samples, 3]
+            raw_rgb = self.final_rgb(new_encodings).reshape((-1, num_samples, 3))   # [N_rays, N_samples, 3]
             
             # Add noise to regularize the density predictions if needed.
             if self.randomized and self.density_noise:
@@ -333,7 +334,6 @@ class MipNeRF(nn.Module):
 #             # Predicted RGB values for rays, Disparity map (inverse of depth), Accumulated opacity (alpha) along a ray
 #             return torch.stack(comp_rgbs), torch.stack(distances), torch.stack(accs)
 
-
 class NeRF(nn.Module):
     def __init__(self,
                  use_viewdirs=True,
@@ -426,7 +426,7 @@ class NeRF(nn.Module):
             if l == 0:
                 num_samples = self.N_samples
                 t_vals, pts = sample_along_rays_nerf(rays_o, rays_d, self.N_samples,
-                                                near, far, randomized=self.randomized, lindisp=False)
+                                                    near, far, randomized=self.randomized, lindisp=False)
                 # t_vals : [N_rays, N_samples]
                 # pts : [N_rays, N_samples, 3]
             else:
