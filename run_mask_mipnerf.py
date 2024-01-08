@@ -121,7 +121,7 @@ def train(rank, world_size, args):
         else :
             i_train = random.sample(list(i_train), nerf_input)
         
-        with open(os.path.join(basedir, expname, 'input.txt')) as f :
+        with open(os.path.join(basedir, expname, 'input.txt'), 'w') as f :
             f.write(f"{i_train}")
 
         print("train idx", i_train)
