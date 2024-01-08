@@ -22,7 +22,8 @@ class MipNeRFLoss(torch.nn.modules.loss._Loss):
         losses = []
         psnrs = []
         for rgb in input:
-            mse = (mask * ((rgb - target[..., :3]) ** 2)).sum() / mask.sum()
+            #mse = (mask * ((rgb - target[..., :3]) ** 2)).sum() / mask.sum()
+            mse = torch.mean((rgb - target[..., :3]) ** 2)
             losses.append(mse)
             with torch.no_grad():
                 psnrs.append(mse_to_psnr(mse))
@@ -31,8 +32,9 @@ class MipNeRFLoss(torch.nn.modules.loss._Loss):
         return loss, losses, torch.Tensor(psnrs)
 
 class NeRFLoss(torch.nn.modules.loss._Loss):
-    def __init__(self):
+    def __init__(self, coarse_weight_decay=0.1):
         super(NeRFLoss, self).__init__()
+        self.coarse_weight_decay = coarse_weight_decay
 
     def forward(self, input, target):
         """
