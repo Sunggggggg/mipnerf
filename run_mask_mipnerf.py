@@ -220,7 +220,7 @@ def train(rank, world_size, args):
                 rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_c = object_loss_c * args.loss_lam_c * 0.1 / 3
+                object_loss_c = object_loss_c * args.loss_lam_c * 0.1
 
                 # Fine
                 rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
@@ -228,7 +228,7 @@ def train(rank, world_size, args):
                 rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
                 rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
                 object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_f = object_loss_f * args.loss_lam_f / 3
+                object_loss_f = object_loss_f * args.loss_lam_f
 
                 loss += (object_loss_f + object_loss_c)
 
