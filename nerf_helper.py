@@ -281,7 +281,6 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, randomized,
             t_vals.shape[-1],
             randomized,
         )
-    new_t_vals, _ = torch.sort(torch.cat([t_vals, new_t_vals], -1), -1)         # [N_rays, N_samples + N_importance + 1]
     means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)  
     return new_t_vals, (means, covs)
 
