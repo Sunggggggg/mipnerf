@@ -188,7 +188,7 @@ def sorted_piecewise_constant_pdf(bins, weights, num_samples, randomized):
 
     # Identify the location in `cdf` that corresponds to a random sample.
     # The final `True` index in `mask` will be the start of the sampled interval.
-    mask = u[..., None, :] >= cdf[..., :, None]     # [N_rays, 1, N_importance] >= [N_rays, N_samples+1, 1]
+    mask = u[..., None, :] >= cdf[..., :, None]     # [N_rays, N_samples+1, N_importance]
 
     def find_interval(x):
         # Grab the value where `mask` switches from True to False, and vice versa.
@@ -242,7 +242,7 @@ def sample_along_rays(origins, directions, radii, num_samples, near, far, random
     means, covs = cast_rays(t_vals, origins, directions, radii, ray_shape)
     return t_vals, (means, covs)
     
-def resample_along_rays(origins, directions, radii, t_vals, weights, N_importance, randomized, stop_grad, resample_padding, ray_shape):
+def resample_along_rays(origins, directions, radii, t_vals, weights, randomized, stop_grad, resample_padding, ray_shape):
     """Resampling.
 
     Args :
@@ -264,7 +264,7 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, N_importanc
             new_t_vals = sorted_piecewise_constant_pdf(
                 t_vals,
                 weights,
-                N_importance,
+                t_vals.shape[-1],
                 randomized,
             )
     else:
@@ -278,7 +278,7 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, N_importanc
         new_t_vals = sorted_piecewise_constant_pdf(
             t_vals,
             weights,
-            N_importance,
+            t_vals.shape[-1],
             randomized,
         )
     new_t_vals, _ = torch.sort(torch.cat([t_vals, new_t_vals], -1), -1)         # [N_rays, N_samples + N_importance + 1]

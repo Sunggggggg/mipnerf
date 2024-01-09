@@ -252,10 +252,10 @@ def volumetric_rendering_nerf(rgb, density, t_vals, dirs, white_bkgd):
 
     # Append 100000
     t_dists = torch.cat([t_dists, torch.Tensor([1e10]).expand(t_dists[...,:1].shape)], -1)  # [N_rays, N_samples]
-    delta = t_dists * torch.linalg.norm(dirs[..., None, :], dim=-1)     # [N_rays, N_samples]
-    density_delta = density[..., 0] * delta     # [N_rays, N_samples] * [N_rays, N_samples] = [N_rays, N_samples]
+    delta = t_dists * torch.linalg.norm(dirs[..., None, :], dim=-1)                         # [N_rays, N_samples]
+    density_delta = density[..., 0] * delta                                                 # [N_rays, N_samples]
     
-    alpha = 1 - torch.exp(-density_delta)       # [N_rays, N_samples]
+    alpha = 1 - torch.exp(-density_delta)               # [N_rays, N_samples]
     trans = torch.exp(-torch.cat([
         torch.zeros_like(density_delta[..., :1]),       # [N_rays, 1]
         torch.cumsum(density_delta[..., :-1], dim=-1)   # [N_rays, N_samples-1]
