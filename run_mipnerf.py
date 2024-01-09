@@ -61,7 +61,7 @@ def train(rank, world_size, args):
         ray_shape=args.ray_shape,
         white_bkgd=args.white_bkgd,
         num_levels=args.num_levels,
-        num_samples=args.N_samples,
+        N_samples=args.N_samples,
         hidden=args.hidden,
         density_noise=args.density_noise,
         density_bias=args.density_bias,
