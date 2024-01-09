@@ -23,7 +23,6 @@ class MipNeRFLoss(torch.nn.modules.loss._Loss):
         psnrs = []
         for rgb in input:
             mse = (mask * ((rgb - target[..., :3]) ** 2)).sum() / mask.sum()
-            #mse = torch.mean((rgb - target[..., :3]) ** 2)
             losses.append(mse)
             with torch.no_grad():
                 psnrs.append(mse_to_psnr(mse))
