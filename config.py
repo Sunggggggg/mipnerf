@@ -36,8 +36,7 @@ def config_parser():
     parser.add_argument("--ray_shape", type=str, default="cone")        # should be "cylinder" if llff
     parser.add_argument("--white_bkgd", action="store_true")           # should be False if using llff
     parser.add_argument("--num_levels", type=int, default=2)
-    parser.add_argument("--N_samples", type=int, default=64)
-    parser.add_argument("--N_importance", type=int, default=128)
+    parser.add_argument("--N_samples", type=int, default=128)
     parser.add_argument("--hidden", type=int, default=256)
     parser.add_argument("--density_noise", type=float, default=0.0)
     parser.add_argument("--density_bias", type=float, default=-1.0)
