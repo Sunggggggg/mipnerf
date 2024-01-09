@@ -78,11 +78,11 @@ def train(rank, world_size, args):
         device=torch.device(rank),
     )
     # Optimizer and scheduler
-    # optimizer = optim.AdamW(model.parameters(), lr=args.lr_init, weight_decay=args.weight_decay)
-    # scheduler = MipLRDecay(optimizer, lr_init=args.lr_init, lr_final=args.lr_final, 
-    #                        max_steps=args.max_iters, lr_delay_steps=args.lr_delay_steps, 
-    #                        lr_delay_mult=args.lr_delay_mult)
-    optimizer = optim.Adam(model.parameters(), lr=5e-4, betas=(0.9, 0.999))
+    optimizer = optim.AdamW(model.parameters(), lr=args.lr_init, weight_decay=args.weight_decay)
+    scheduler = MipLRDecay(optimizer, lr_init=args.lr_init, lr_final=args.lr_final, 
+                           max_steps=args.max_iters, lr_delay_steps=args.lr_delay_steps, 
+                           lr_delay_mult=args.lr_delay_mult)
+    # optimizer = optim.Adam(model.parameters(), lr=5e-4, betas=(0.9, 0.999))
     
     # Training hyperparams
     N_rand = args.N_rand
@@ -97,7 +97,7 @@ def train(rank, world_size, args):
 
         model.load_state_dict(ckpt['network_fn_state_dict'])
         optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        #scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+        scheduler.load_state_dict(ckpt['scheduler_state_dict'])
 
         nerf_weight_path = 'nerf_tun_weights.tar'
 
@@ -206,35 +206,34 @@ def train(rank, world_size, args):
 
         # MAE
         if args.mae_weight :
-            with torch.no_grad() :
-                sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
-                rgbs = render_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
-                                    near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, progress_bar=False) # [N, 2, H, W, 3]
-                rgbs = torch.tensor(rgbs)
-                rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
+            sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
+            rgbs = render_sample_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
+                                near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, progress_bar=False) # [N, 2, H, W, 3]
+            rgbs = torch.tensor(rgbs)
+            rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
 
-                # Coarse
-                rgbs_images, rgbs_poses = mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type)
-                rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W] or # [1, 3, Hn, Wn]
-                rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
-                rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
-                object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_c = object_loss_c * args.loss_lam_c * 0.1
+            # Coarse
+            rgbs_images, rgbs_poses = mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type)
+            rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W] or # [1, 3, Hn, Wn]
+            rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
+            rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
+            object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
+            object_loss_c = object_loss_c * args.loss_lam_c * 0.1
 
-                # Fine
-                rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
-                rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
-                rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
-                rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
-                object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_f = object_loss_f * args.loss_lam_f
+            # Fine
+            rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
+            rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
+            rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
+            rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
+            object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
+            object_loss_f = object_loss_f * args.loss_lam_f
 
-                loss += (object_loss_f + object_loss_c)
+            loss += (object_loss_f + object_loss_c)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        #scheduler.step()
+        scheduler.step()
         
         # Rest is logging
         if i%args.i_weights==0 and i > 0:
@@ -242,7 +241,7 @@ def train(rank, world_size, args):
             torch.save({
                 'network_fn_state_dict': model.module.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                #'scheduler_state_dict' : scheduler.state_dict()
+                'scheduler_state_dict' : scheduler.state_dict()
             }, path)
             print('Saved checkpoints at', path)
 
