@@ -1,0 +1,1 @@
+python run_mask_mipnerf.py --expname select --nerf_config configs/MipNeRF/lego_8shot.txt --mae_config configs/MAE/mae.txt --i_print 1 --max_iters 10000

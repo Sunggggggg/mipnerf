@@ -23,7 +23,7 @@ from nerf_render import *
 from MAE import IMAGE, PATCH, mae_input_format
 from loss import MAELoss    
 
-FIX = False  # Fix nerf training images
+FIX = True  # Fix nerf training images
 
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
@@ -116,7 +116,8 @@ def train(rank, world_size, args):
         mae_input = args.mae_input
         if FIX :
             # Always same input index
-            i_train = np.arange(nerf_input) + mae_input
+            #i_train = np.arange(nerf_input) + mae_input
+            i_train = np.array([42, 74, 51, 68, 76, 94, 92, 91])
         else :
             i_train = random.sample(list(i_train), nerf_input)
         
