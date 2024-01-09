@@ -107,6 +107,15 @@ def train(rank, world_size, args):
     poses = torch.Tensor(poses).to(rank)
     render_poses = torch.Tensor(render_poses).to(rank)
 
+    if args.eval:
+        print('RENDER ONLY')
+        with torch.no_grad():
+            rgbs = render_path(poses[i_test], hwf, K, args.chunk, model, 
+                                    near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
+                                    gt_imgs=images[i_test], savedir=testsavedir)
+            eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], None, torch.device(rank))
+            print(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}, LPIPS : {eval_lpips:.3f}\n")
+            return
     
     for i in trange(start, max_iters):
         # 1. Random select image
