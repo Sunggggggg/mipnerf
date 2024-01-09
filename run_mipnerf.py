@@ -116,7 +116,7 @@ def train(rank, world_size, args):
                                     near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, 
                                     gt_imgs=images[i_test], savedir=testsavedir)
             eval_psnr, eval_ssim, eval_lpips = get_metric(rgbs[:, -1], images[i_test], None, torch.device(rank))
-            print(f"{i:06d}-iter PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}, LPIPS : {eval_lpips:.3f}\n")
+            print(f"PSNR : {eval_psnr:.3f}, SSIM : {eval_ssim:.3f}, LPIPS : {eval_lpips:.3f}\n")
         
         return
     
