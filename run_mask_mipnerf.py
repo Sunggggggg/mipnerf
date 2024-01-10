@@ -116,8 +116,7 @@ def train(rank, world_size, args):
         mae_input = args.mae_input
         if FIX :
             # Always same input index
-            #i_train = np.arange(nerf_input) + mae_input
-            i_train = np.array([42, 74, 51, 68, 76, 94, 92, 91])
+            i_train = np.arange(nerf_input)
         else :
             i_train = random.sample(list(i_train), nerf_input)
         
