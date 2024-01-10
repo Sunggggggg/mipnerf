@@ -31,9 +31,8 @@ class MipNeRFLoss(torch.nn.modules.loss._Loss):
         return loss, losses, torch.Tensor(psnrs)
 
 class NeRFLoss(torch.nn.modules.loss._Loss):
-    def __init__(self, coarse_weight_decay=0.1):
+    def __init__(self):
         super(NeRFLoss, self).__init__()
-        self.coarse_weight_decay = coarse_weight_decay
 
     def forward(self, input, target):
         """

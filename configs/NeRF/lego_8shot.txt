@@ -18,7 +18,6 @@ num_levels = 2
 N_samples = 64
 N_importance = 128
 density_noise = 0.0
-resample_padding = 0.01
 min_deg = 0
 max_deg = 10
 viewdirs_min_deg = 0

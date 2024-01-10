@@ -64,6 +64,7 @@ def train(rank, world_size, args):
         white_bkgd=args.white_bkgd,
         num_levels=args.num_levels,
         num_samples=args.N_samples,
+        N_importance=args.N_importance,
         hidden=args.hidden,
         density_noise=args.density_noise,
         resample_padding=args.resample_padding,
@@ -93,7 +94,6 @@ def train(rank, world_size, args):
 
         nerf_weight_path = 'nerf_tun_weights.tar'
 
-
     # Set multi gpus
     model = DDP(model, device_ids=[rank])
     
@@ -108,7 +108,7 @@ def train(rank, world_size, args):
         mae_input = args.mae_input
         if FIX :
             # Always same input index
-            i_train = np.arange(nerf_input) + mae_input
+            i_train = np.arange(nerf_input)
         else :
             i_train = random.sample(list(i_train), nerf_input)
         
@@ -146,7 +146,6 @@ def train(rank, world_size, args):
     model.train()
     poses = torch.Tensor(poses).to(rank)
     render_poses = torch.Tensor(render_poses).to(rank)
-
 
     for i in trange(start, max_iters):
         # 1. Random select image
@@ -191,30 +190,29 @@ def train(rank, world_size, args):
 
         # MAE
         if args.mae_weight :
-            with torch.no_grad() :
-                sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
-                rgbs = render_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
-                                    near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, progress_bar=False) # [N, 2, H, W, 3]
-                rgbs = torch.tensor(rgbs)
-                rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
+            sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
+            rgbs = render_sample_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
+                                near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, progress_bar=False) # [N, 2, H, W, 3]
+            rgbs = torch.tensor(rgbs)
+            rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
 
-                # Coarse
-                rgbs_images, rgbs_poses = mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type)
-                rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W] or # [1, 3, Hn, Wn]
-                rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
-                rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
-                object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_c = object_loss_c * args.loss_lam_c
+            # Coarse
+            rgbs_images, rgbs_poses = mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type)
+            rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W] or # [1, 3, Hn, Wn]
+            rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
+            rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
+            object_loss_c = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
+            object_loss_c = object_loss_c * args.loss_lam_c
 
-                # Fine
-                rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
-                rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
-                rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
-                rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
-                object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
-                object_loss_f = object_loss_f * args.loss_lam_f
+            # Fine
+            rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
+            rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
+            rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
+            rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
+            object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
+            object_loss_f = object_loss_f * args.loss_lam_f
 
-                loss += (object_loss_f + object_loss_c)
+            loss += (object_loss_f + object_loss_c)
 
         optimizer.zero_grad()
         loss.backward()

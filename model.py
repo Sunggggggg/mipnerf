@@ -337,7 +337,6 @@ class NeRF(nn.Module):
                  N_importance=128,
                  hidden=256,
                  density_noise=1,
-                 resample_padding=0.01,
                  min_deg=0, max_deg=10,
                  viewdirs_min_deg=0, viewdirs_max_deg=4,
                  device=torch.device("cpu"),
@@ -354,7 +353,6 @@ class NeRF(nn.Module):
         self.density_input = 3 + (max_deg - min_deg) * 3 * 2
         self.rgb_input = 3 + ((viewdirs_max_deg - viewdirs_min_deg) * 3 * 2)
         self.density_noise = density_noise
-        self.resample_padding = resample_padding
         self.hidden = hidden
         self.device = device
         self.return_raw = return_raw
