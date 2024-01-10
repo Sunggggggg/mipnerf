@@ -309,43 +309,43 @@ class OnlyEncoder(nn.Module):
 
         return x
 
-# def mae_patch_embedding(args, H, W, n=5):
-#     """ Use patch embedding for feature extracting
-#     """
-#     model = MaskedAutoencoderViT(img_H=H*n, img_W=W*n, patch_H=H, patch_W=W, embed_dim=args.embed_dim, 
-#                                  depth=args.depth, num_heads=args.num_heads, decoder_embed_dim=args.decoder_embed_dim,
-#                                  decoder_depth=args.decoder_depth, decoder_num_heads=args.decoder_num_heads, mlp_ratio=4, 
-#                                  norm_layer=nn.LayerNorm, norm_pix_loss=args.norm_pix_loss, 
-#                                  emb_type=args.emb_type, cam_pose_encoding=args.cam_pose_encoding)
+def mae_patch_embedding(args, H, W, n=5):
+    """ Use patch embedding for feature extracting
+    """
+    model = MaskedAutoencoderViT(img_H=H*n, img_W=W*n, patch_H=H, patch_W=W, embed_dim=args.embed_dim, 
+                                 depth=args.depth, num_heads=args.num_heads, decoder_embed_dim=args.decoder_embed_dim,
+                                 decoder_depth=args.decoder_depth, decoder_num_heads=args.decoder_num_heads, mlp_ratio=4, 
+                                 norm_layer=nn.LayerNorm, norm_pix_loss=args.norm_pix_loss, 
+                                 emb_type=args.emb_type, cam_pose_encoding=args.cam_pose_encoding)
     
-#     print("Build patch embedding MAE :", print_parameters(model))
-#     print("Summary")
-#     print(f"Image size : ({H*n}, {W*n})")
-#     print(f"Patch size : ({H}, {W})")
-#     print(f"Embed_dim (E/D) : {args.embed_dim}, {args.decoder_embed_dim}")
+    print("Build patch embedding MAE :", print_parameters(model))
+    print("Summary")
+    print(f"Image size : ({H*n}, {W*n})")
+    print(f"Patch size : ({H}, {W})")
+    print(f"Embed_dim (E/D) : {args.embed_dim}, {args.decoder_embed_dim}")
 
-#     return model
+    return model
 
-# def mae_image_embedding(args, H, W, n=5):
-#     """ Use image embedding for feature extracting
-#     """
-#     k = args.image_token**0.5
-#     patch_H, patch_W = int(H//k), int(W//k)
+def mae_image_embedding(args, H, W, n=5):
+    """ Use image embedding for feature extracting
+    """
+    k = args.image_token**0.5
+    patch_H, patch_W = int(H//k), int(W//k)
 
-#     model = MaskedAutoencoderViT(img_H=H, img_W=W, patch_H=patch_H, patch_W=patch_W, embed_dim=args.embed_dim, 
-#                                  depth=args.depth, num_heads=args.num_heads, decoder_embed_dim=args.decoder_embed_dim,
-#                                  decoder_depth=args.decoder_depth, decoder_num_heads=args.decoder_num_heads, mlp_ratio=4, 
-#                                  norm_layer=nn.LayerNorm, norm_pix_loss=args.norm_pix_loss, 
-#                                  emb_type=args.emb_type, cam_pose_encoding=args.cam_pose_encoding)
-#     print("Build image embedding MAE :", print_parameters(model))
-#     print("Summary")
-#     print(f"Image size : ({H}, {W})")
-#     print(f"Patch size : ({patch_H}, {patch_W})")
-#     print(f"Embed_dim (E/D) : {args.embed_dim*args.image_token}, {args.decoder_embed_dim*args.image_token}")
+    model = MaskedAutoencoderViT(img_H=H, img_W=W, patch_H=patch_H, patch_W=patch_W, embed_dim=args.embed_dim, 
+                                 depth=args.depth, num_heads=args.num_heads, decoder_embed_dim=args.decoder_embed_dim,
+                                 decoder_depth=args.decoder_depth, decoder_num_heads=args.decoder_num_heads, mlp_ratio=4, 
+                                 norm_layer=nn.LayerNorm, norm_pix_loss=args.norm_pix_loss, 
+                                 emb_type=args.emb_type, cam_pose_encoding=args.cam_pose_encoding)
+    print("Build image embedding MAE :", print_parameters(model))
+    print("Summary")
+    print(f"Image size : ({H}, {W})")
+    print(f"Patch size : ({patch_H}, {patch_W})")
+    print(f"Embed_dim (E/D) : {args.embed_dim*args.image_token}, {args.decoder_embed_dim*args.image_token}")
 
-#     return model
+    return model
 
-def mae_image_embedding(args, H, W):
+def encoder_image_embedding(args, H, W):
     k = args.image_token**0.5
     patch_H, patch_W = int(H//k), int(W//k)
 
@@ -362,7 +362,7 @@ def mae_image_embedding(args, H, W):
 
     return encoder
 
-def mae_patch_embedding(args, H, W):
+def encoder_patch_embedding(args, H, W):
     n = int(args.mae_input**0.5)
     
     encoder = OnlyEncoder(img_H=H*n, img_W=W*n, patch_H=H, patch_W=W, 
@@ -378,6 +378,7 @@ def mae_patch_embedding(args, H, W):
 
     return encoder
 
-IMAGE = mae_image_embedding
-PATCH = mae_patch_embedding
-
+IMAGE = encoder_image_embedding
+PATCH = encoder_patch_embedding
+IMAGE_MAE = mae_image_embedding
+PATCH_MAE = mae_patch_embedding

@@ -108,7 +108,7 @@ def load_nerf_synthetic_data(basedir, num_inputs=25, scale=4, testskip=8, white_
     object_list = [obj for obj in object_list if os.path.isdir(os.path.join(nerf_synthetic_dir, obj))]
     
     # Same input image size
-    train_imgs, train_poses, val_imgs, val_poses, test_imgs, test_poses = [], [], [], [], [], []
+    train_imgs, train_poses = [], []
     for _object in object_list :
         objectdir = os.path.join(nerf_synthetic_dir, _object)
         images, poses, render_poses, hwf, i_split = load_blender_data(objectdir, scale=scale, testskip=testskip)
@@ -120,27 +120,13 @@ def load_nerf_synthetic_data(basedir, num_inputs=25, scale=4, testskip=8, white_
             images = images[...,:3]
         
         # train
-        train_imgs.append(images[i_train])        # [N, H, W, 3]
-        train_poses.append(poses[i_train])      # [N, 4, 4]
-
-        # val
-        val_imgs.append(images[i_val])        # [N, H, W, 3]
-        val_poses.append(poses[i_val])      # [N, 4, 4]
-
-        # test
-        test_imgs.append(images[i_test])        # [N, H, W, 3]
-        test_poses.append(poses[i_test])      # [N, 4, 4]
+        train_imgs.append(images[i_train])          # [N, H, W, 3]
+        train_poses.append(poses[i_train])          # [N, 4, 4]
 
     train_imgs = np.stack(train_imgs, 0)      # [O, N, H, W, 3]    
     train_poses = np.stack(train_poses, 0)    # [O, N, 4, 4]
 
-    val_imgs = np.stack(val_imgs, 0)      # [O, N, H, W, 3]    
-    val_poses = np.stack(val_poses, 0)    # [O, N, 4, 4]
-
-    test_imgs = np.stack(test_imgs, 0)      # [O, N, H, W, 3]    
-    test_poses = np.stack(test_poses, 0)    # [O, N, 4, 4]
-
-    return train_imgs, train_poses, val_imgs, val_poses, test_imgs, test_poses, hwf, object_list
+    return train_imgs, train_poses, hwf, object_list
 
 def sampling_pose(N, theta_range, phi_range, radius_range) :
     """ sampling with sorting angle

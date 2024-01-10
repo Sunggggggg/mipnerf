@@ -73,3 +73,41 @@ def config_parser():
     parser.add_argument("--i_video",   type=int, default=10000)
     
     return parser
+
+def mae_args_parser():
+    parser = configargparse.ArgumentParser()
+    # Basic
+    parser.add_argument("--basedir", default='./mae_logs', type=str)
+    parser.add_argument('--expname', type=str, help= "Experiment name")
+    parser.add_argument("--eval", action='store_true', help='Eval mode')
+    parser.add_argument('--mae_config', is_config_file=True, help='config file path')
+    parser.add_argument("--mae_weight", type=str, default=None)
+    # Dataset
+    parser.add_argument("--datadir", type=str, default='/mnt/SKY/dataset')
+    parser.add_argument("--dataset_type", type=str, default='blender')
+    parser.add_argument('--scale', default=4, type=int)
+    parser.add_argument("--testskip", type=int, default=8)
+    parser.add_argument('--mae_input', default=25, type=int, help= "#of MAE images")
+    parser.add_argument("--white_bkgd", action='store_true')
+    # Training hyperparams
+    parser.add_argument('--epochs', default=5001, type=int)
+    parser.add_argument('--lrate', default=0.0001, type=float)
+    # Model
+    parser.add_argument('--emb_type', default='IMAGE', type=str)
+    parser.add_argument('--cam_pose_encoding', action='store_true')
+    parser.add_argument('--image_token', default=16, type=int)
+    parser.add_argument('--norm_pix_loss', action='store_true')
+    # Encoder part
+    parser.add_argument('--embed_dim', default=1024, type=int)
+    parser.add_argument('--depth', default=24, type=int)
+    parser.add_argument('--num_heads', default=16, type=int)
+    # Decoder part
+    parser.add_argument('--decoder_embed_dim', default=512, type=int)
+    parser.add_argument('--decoder_depth', default=8, type=int)
+    parser.add_argument('--decoder_num_heads', default=16, type=int)
+    # logging/saving options
+    parser.add_argument('--i_print', default=10, type=int)
+    parser.add_argument('--i_figure', default=100, type=int)
+    parser.add_argument('--i_weight', default=1000, type=int)
+    
+    return parser

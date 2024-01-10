@@ -1,0 +1,27 @@
+# 
+expname = pre_train
+
+#
+datadir = /mnt/SKY/dataset
+dataset_type = blender
+scale = 4
+testskip = 8
+mae_input = 25
+white_bkgd = True
+
+# Model
+emb_type = IMAGE
+image_token = 16
+cam_pose_encoding = True
+
+embed_dim = 128             
+depth = 6                   
+num_heads = 4               
+decoder_embed_dim = 64      
+decoder_depth = 2
+decoder_num_heads = 4
+
+#
+i_print = 10
+i_figure = 1000
+i_weight = 1000
