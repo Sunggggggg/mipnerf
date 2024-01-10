@@ -2,7 +2,7 @@
 mae_input = 25
 
 # MAE
-mae_weight = weights/MAE/model_5000.tar
+mae_weight = weights/MAE/mae_weight.tar
 emb_type = IMAGE
 image_token = 16
 cam_pose_encoding = True
