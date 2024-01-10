@@ -105,8 +105,8 @@ def train(rank, world_size, args):
     model = DDP(model, device_ids=[rank])
     
     # Loss func (Mip-NeRF)
-    loss_func = MipNeRFLoss(args.coarse_weight_decay)
-    #loss_func = NeRFLoss()
+    #loss_func = MipNeRFLoss(args.coarse_weight_decay)
+    loss_func = NeRFLoss()
     
     #################################
     # MAE
@@ -201,8 +201,8 @@ def train(rank, world_size, args):
                                         use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
         
         # 5. loss and update
-        loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
-        
+        # loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
+        loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target)
         # MAE
         if args.mae_weight :
             sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
