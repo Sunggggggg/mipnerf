@@ -1,4 +1,5 @@
 import os
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -16,6 +17,8 @@ from dataset import load_nerf_synthetic_data, load_nerf_llff_data
 from MAE import make_input, IMAGE_MAE, PATCH_MAE
 # 
 from MAE import image_plot, to8b
+
+FIX = True
 
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
@@ -49,7 +52,7 @@ def train(rank, world_size, args):
     elif args.dataset_type == 'LLFF':
         train_imgs, train_poses, hwf, object_list = \
             load_nerf_llff_data(args.datadir, num_inputs=mae_input, scale=args.scale, llffhold=8)
-    
+
     print("Data load shape")
     print(f"image shape {train_imgs.shape}")
     print(f"poses shape {train_poses.shape}")
@@ -64,7 +67,7 @@ def train(rank, world_size, args):
         dir_path = os.path.join(fig_path, object_list[idx])
         os.makedirs(dir_path, exist_ok=True)
 
-    train_imgs = make_input(train_imgs, args.emb_type, fig_path, object_list, n)
+    train_imgs = make_input(train_imgs, args.emb_type, fig_path, object_list, n)     # [B, 3, N, H, W]
 
     # Model build
     if args.emb_type == "IMAGE" :

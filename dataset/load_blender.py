@@ -118,7 +118,9 @@ def load_nerf_synthetic_data(basedir, num_inputs=25, scale=4, testskip=8, white_
             images = images[...,:3]*images[...,-1:] + (1.-images[...,-1:])
         else :
             images = images[...,:3]
-        
+        # Few-shot
+        i_train = i_train[-num_inputs:]             # 75, 76, ... 97, 98, 99
+        print(i_train)
         # train
         train_imgs.append(images[i_train])          # [N, H, W, 3]
         train_poses.append(poses[i_train])          # [N, 4, 4]
