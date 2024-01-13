@@ -97,7 +97,7 @@ def train(rank, world_size, args):
 
         model.load_state_dict(ckpt['network_fn_state_dict'])
         optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+        #scheduler.load_state_dict(ckpt['scheduler_state_dict'])
 
         nerf_weight_path = 'nerf_tun_weights.tar'
 
