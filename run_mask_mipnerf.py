@@ -208,6 +208,7 @@ def train(rank, world_size, args):
             sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
             rgbs = render_sample_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
                                 near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, progress_bar=False) # [N, 2, H, W, 3]
+            rgbs = torch.tensor(rgbs)
             rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
 
             # Coarse

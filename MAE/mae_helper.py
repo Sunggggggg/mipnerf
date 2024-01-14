@@ -59,9 +59,6 @@ def mae_input_format(imgs, poses, nerf_input, mae_input, emb_type='IMAGE'):
         poses       [B, N, 4, 4] 
     """
     # Only use [:nerf_input]
-    imgs = torch.Tensor(imgs)    # [F, H, W, 3]  
-    poses = torch.Tensor(poses)  # [F, 4, 4]
-
     rand_pose = sampling_pose(mae_input-nerf_input, theta_range=[-180., 180.], phi_range=[-90., 0.], radius_range=[4., 4.])      # [N-F, 4, 4]
 
     # 

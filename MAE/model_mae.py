@@ -283,7 +283,7 @@ class OnlyEncoder(nn.Module):
 
         cls_token = self.cls_token + pos_embed[:, :1, :]
         cls_tokens = cls_token.expand(x.shape[0], -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
+        x = torch.cat((cls_tokens, x), dim=1)   #[B, N+1, n*n*embed_dim]
 
         # apply Transformer blocks
         for blk in self.blocks:
