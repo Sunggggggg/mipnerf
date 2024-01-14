@@ -3,6 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 from einops import rearrange
 
+from dataset import sampling_pose
 from .visualize import image_plot
 
 def make_input(imgs, emb_type, fig_path, object_list, n=5, save_fig=True):
@@ -57,9 +58,15 @@ def mae_input_format(imgs, poses, nerf_input, mae_input, emb_type='IMAGE'):
         imgs        [B, 3, Hxn, Wxn]
         poses       [B, N, 4, 4] 
     """
-    # Only use [:nerf_input]  
+    # Only use [:nerf_input]
+    imgs = torch.Tensor(imgs)    # [F, H, W, 3]  
+    poses = torch.Tensor(poses)  # [F, 4, 4]
+
+    rand_pose = sampling_pose(mae_input-nerf_input, theta_range=[-180., 180.], phi_range=[-90., 0.], radius_range=[4., 4.])      # [N-F, 4, 4]
+
+    # 
     imgs = torch.cat([imgs, torch.zeros((mae_input-nerf_input, *imgs.shape[1:]))], dim=0)       
-    poses = torch.cat([poses, torch.zeros((mae_input-nerf_input, *poses.shape[1:]))], dim=0)
+    poses = torch.cat([poses, rand_pose], dim=0)
     
     #
     if emb_type == 'IMAGE' :
