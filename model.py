@@ -162,7 +162,7 @@ class MipNeRF(nn.Module):
                 #  do positional encoding of viewdirs
                 viewdirs = self.viewdirs_encoding(view_dirs.to(self.device))             # [N_rays, 30]
                 #viewdirs = torch.cat((viewdirs, view_dirs.to(self.device)), -1)          # [N_rays, 30]
-                viewdirs = torch.tile(viewdirs[:, None, :], (1, self.N_samples, 1))      # [N_rays, N_samples, 30]
+                viewdirs = torch.tile(viewdirs[:, None, :], (1, N_samples, 1))      # [N_rays, N_samples, 30]
                 viewdirs = viewdirs.reshape((-1, viewdirs.shape[-1]))                    # [N_rays*N_samples, 30]
                 new_encodings = self.rgb_net0(new_encodings)                             # [N_rays*N_samples, 256]
                 new_encodings = torch.cat((new_encodings, viewdirs), -1)                 # [N_rays*N_samples, 30+256]
