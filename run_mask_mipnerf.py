@@ -23,7 +23,7 @@ from nerf_render import *
 from MAE import IMAGE, PATCH, mae_input_format
 from loss import MAELoss    
 
-FIX = True  # Fix nerf training images
+FIX = False  # Fix nerf training images
 
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
@@ -105,8 +105,8 @@ def train(rank, world_size, args):
     model = DDP(model, device_ids=[rank])
     
     # Loss func (Mip-NeRF)
-    #loss_func = MipNeRFLoss(args.coarse_weight_decay)
-    loss_func = NeRFLoss()
+    loss_func = MipNeRFLoss(args.coarse_weight_decay)
+    #loss_func = NeRFLoss()
     
     #################################
     # MAE
@@ -116,7 +116,8 @@ def train(rank, world_size, args):
         mae_input = args.mae_input
         if FIX :
             # Always same input index
-            i_train = np.arange(nerf_input)
+            # i_train = np.arange(nerf_input)
+            i_train = np.array([26, 86, 2, 55, 75, 93, 16, 73])
         else :
             i_train = random.sample(list(i_train), nerf_input)
         
@@ -157,7 +158,6 @@ def train(rank, world_size, args):
     model.train()
     poses = torch.Tensor(poses).to(rank)
     render_poses = torch.Tensor(render_poses).to(rank)
-
 
     for i in trange(start, max_iters):
         # 1. Random select image
@@ -201,8 +201,8 @@ def train(rank, world_size, args):
                                         use_viewdirs=args.use_viewdirs, ndc=args.no_ndc)
         
         # 5. loss and update
-        # loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
-        loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target)
+        loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
+        #loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target)
         # MAE
         if args.mae_weight :
             sampled_poses = sampling_pose(nerf_input, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
@@ -227,7 +227,7 @@ def train(rank, world_size, args):
             object_loss_f = mae_loss_func(gt_feat[:, 1:, :], rendered_feat[:, 1:, :])
             object_loss_f = object_loss_f * args.loss_lam_f
 
-            loss += (object_loss_f + object_loss_c)
+            loss += (object_loss_f + object_loss_c * args.coarse_weight_decay)
 
         optimizer.zero_grad()
         loss.backward()

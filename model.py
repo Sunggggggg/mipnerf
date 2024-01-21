@@ -139,10 +139,14 @@ class MipNeRF(nn.Module):
                                                         near, far, randomized=self.randomized, lindisp=False,
                                                         ray_shape=self.ray_shape)
             else:
-                t_vals, (mean, var) = resample_along_rays(rays_o, rays_d, radii, t_vals.to(rays_o.device),
+                new_t_vals, (new_mean, new_var) = resample_along_rays(rays_o, rays_d, radii, t_vals.to(rays_o.device),
                                                           weights.to(rays_o.device), randomized=self.randomized,
                                                           stop_grad=True, resample_padding=self.resample_padding, ray_shape=self.ray_shape)
-            
+                self.N_samples *= 2
+                t_vals, _ = torch.sort(torch.cat([t_vals, new_t_vals], -1), -1)
+                mean, _ = torch.sort(torch.cat([mean, new_mean], -1), -1)
+                var, _ = torch.sort(torch.cat([var, new_var], -1), -1)
+
             # do integrated positional encoding of samples
             samples_enc = self.positional_encoding(mean, var)[0]
             samples_enc = samples_enc.reshape([-1, samples_enc.shape[-1]])  # [N_rays*N_samples, 96]
