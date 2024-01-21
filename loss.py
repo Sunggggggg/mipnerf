@@ -85,12 +85,12 @@ class MAELoss(torch.nn.modules.loss._Loss):
             # Style reconstruction loss
             score = torch.tensor([gt_feat[:, n, :] @ object_feat[:, n, :].T for n in range(N)]).div(N*D)
             
-            loss = score.sum()
+            object_loss = score.sum()
 
             # Feature reconstruction loss
             gt_feat = gt_feat.mean(1)               # [1, D]
             object_feat = object_feat.mean(1)       # [1, D]
 
-            loss += F.mse_loss(gt_feat, object_feat)/(N*D) 
+            object_loss += F.mse_loss(gt_feat, object_feat)/(N*D) 
         
         return object_loss
