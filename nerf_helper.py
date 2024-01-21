@@ -281,7 +281,9 @@ def resample_along_rays(origins, directions, radii, t_vals, weights, randomized,
             t_vals.shape[-1],
             randomized,
         )
-    means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)  
+    
+    new_t_vals, _ = torch.sort(torch.cat([t_vals, new_t_vals], -1), -1)         # [B, N+1 + N+1]
+    means, covs = cast_rays(new_t_vals, origins, directions, radii, ray_shape)  # [B, N+1 + N]
     return new_t_vals, (means, covs)
 
 def sample_along_rays_nerf(origins, directions, num_samples, near, far, randomized, lindisp):
