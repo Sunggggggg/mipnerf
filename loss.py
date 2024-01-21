@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 class MipNeRFLoss(torch.nn.modules.loss._Loss):
     """
@@ -79,6 +80,17 @@ class MAELoss(torch.nn.modules.loss._Loss):
             cos_theta =  G_dot_T / (GT*OBJECT)
             object_loss = torch.arccos(cos_theta)
         else : # "PERCE"
-            pass
+            B, N, D = gt_feat.shape
+            assert gt_feat.shape == object_feat.shape, "Different feature dim"\
+            # Style reconstruction loss
+            score = torch.tensor([gt_feat[:, n, :] @ object_feat[:, n, :].T for n in range(N)]).div(N*D)
+            
+            loss = score.sum()
+
+            # Feature reconstruction loss
+            gt_feat = gt_feat.mean(1)               # [1, D]
+            object_feat = object_feat.mean(1)       # [1, D]
+
+            loss += F.mse_loss(gt_feat, object_feat)/(N*D) 
         
         return object_loss
