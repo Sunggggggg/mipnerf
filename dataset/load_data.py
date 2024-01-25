@@ -12,7 +12,7 @@ def load_data(datadir, dataset_type='blender', scale=4,
     """
     # Load data
     K = None
-    if dataset_type == 'llff':
+    if dataset_type == 'LLFF':
         images, poses, bds, render_poses, i_test = load_llff_data(datadir, scale,
                                                                   recenter=True, bd_factor=.75,
                                                                   spherify=spherify)
@@ -39,7 +39,8 @@ def load_data(datadir, dataset_type='blender', scale=4,
             far = 1.
         print('NEAR FAR', near, far)
 
-        return 
+        return images, poses, render_poses, hwf, K, near, far, i_train, i_val, i_test, bds
+
 
     elif dataset_type == 'blender':
         images, poses, render_poses, hwf, i_split = load_blender_data(datadir, scale=scale, testskip=testskip)
@@ -54,8 +55,8 @@ def load_data(datadir, dataset_type='blender', scale=4,
         else:
             images = images[...,:3]
 
-    else:
-        print('Unknown dataset type', dataset_type, 'exiting')
-    
-    return images, poses, render_poses, hwf, K, near, far, i_train, i_val, i_test
+        return images, poses, render_poses, hwf, K, near, far, i_train, i_val, i_test
 
+
+    
+    

@@ -295,13 +295,6 @@ def load_llff_data(basedir, factor=8, recenter=True, bd_factor=.75, spherify=Fal
     return images, poses, bds, render_poses, i_test
 
 def load_nerf_llff_data(basedir, num_inputs=25, scale=8, llffhold=8):
-    """ Load nerf_synthetic dataset with all objects
-        For MAE training input
-    Return
-
-    imgs        # [O, N, H, W, 3]
-    poses       # [O, N, 3, 4]
-    """
     nerf_llff_dir = os.path.join(basedir, 'nerf_llff_data')
     object_list = os.listdir(nerf_llff_dir)
     object_list = [obj for obj in object_list if os.path.isdir(os.path.join(nerf_llff_dir, obj))]
@@ -338,10 +331,13 @@ def load_nerf_llff_data(basedir, num_inputs=25, scale=8, llffhold=8):
 
     return train_imgs, train_poses, hwf, object_list
 
-def sampling_pose(N, poses, bounds):
+def llff_sampling_pose(N, poses, bounds):
     """
     poses       : LLFF Style pose matrix    [N, 3, 5]
     bounds      : LLFF Style bound matrix   [N, 2]
+
+    return 
+        [N, 3, 4]
     """
     close_depth, inf_depth = bounds.min() * .9, bounds.max() * 5.
     dt = .75

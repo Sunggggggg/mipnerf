@@ -9,7 +9,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 # 
 from config import config_parser
 from set_multi_gpus import set_ddp, myDDP
-from dataset import load_data, sampling_pose
+from dataset import load_data, blender_sampling_pose, llff_sampling_pose
 from metric import get_metric
 # 
 from scheduler import MipLRDecay
@@ -23,16 +23,15 @@ from nerf_render import *
 from MAE import IMAGE, PATCH, mae_input_format
 from loss import MAELoss    
 
-FIX = True  # Fix nerf training images
-
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
     set_ddp(rank, world_size)
     torch.set_default_tensor_type(torch.cuda.FloatTensor)
     
     # Load dataset
-    images, poses, render_poses, hwf, K, near, far, i_train, i_val, i_test \
-        = load_data(args.datadir, args.dataset_type, args.scale, args.testskip) # blender
+    # images, poses, render_poses, hwf, K, near, far, i_train, i_val, i_test \ # blender
+    images, poses, render_poses, hwf, K, near, far, i_train, i_val, i_test,  bds\
+        = load_data(args.datadir, args.dataset_type, args.scale, args.testskip) 
 
     # Cast intrinsics to right types
     H, W, focal = hwf
@@ -114,10 +113,18 @@ def train(rank, world_size, args):
         # 1. Select few-shot
         nerf_input = args.nerf_input
         mae_input = args.mae_input
+
+        if args.dataset_type == 'blender' :
+            FIX = False
+            sampling_pose = lambda N : blender_sampling_pose(N, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
+        elif args.dataset_type == 'LLFF' :
+            FIX = True 
+            sampling_pose = lambda N : llff_sampling_pose(N, poses, bds)
+
         if FIX :
             # Always same input index
             # i_train = np.arange(nerf_input)
-            i_train = np.array([1, 2, 3, 4, 5, 6, 7, 9])
+            i_train = np.array([0, 1, 2, 3, 4, 5, 6, 7, 9]) # 9
         else :
             i_train = random.sample(list(i_train), nerf_input)
         
@@ -142,7 +149,7 @@ def train(rank, world_size, args):
         encoder.eval()
 
         train_images, train_poses = torch.tensor(images[i_train]), torch.tensor(poses[i_train])
-        mae_input_images, mae_input_poses = mae_input_format(train_images, train_poses, nerf_input, mae_input, args.emb_type)
+        mae_input_images, mae_input_poses = mae_input_format(train_images, train_poses, nerf_input, mae_input, args.emb_type, sampling_pose)
         mae_input_images = mae_input_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
         mae_input_poses = mae_input_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
 

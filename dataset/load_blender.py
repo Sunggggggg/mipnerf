@@ -130,7 +130,7 @@ def load_nerf_synthetic_data(basedir, num_inputs=25, scale=4, testskip=8, white_
 
     return train_imgs, train_poses, hwf, object_list
 
-def sampling_pose(N, theta_range, phi_range, radius_range) :
+def blender_sampling_pose(N, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5]) :
     """ sampling with sorting angle
     """
     theta = np.random.uniform(*theta_range, N)

@@ -3,7 +3,7 @@ import torch
 import matplotlib.pyplot as plt
 from einops import rearrange
 
-from dataset import sampling_pose
+from dataset import blender_sampling_pose, llff_sampling_pose
 from .visualize import image_plot
 
 def make_input(imgs, emb_type, fig_path, object_list, n=5, save_fig=True):
@@ -43,7 +43,7 @@ def make_input(imgs, emb_type, fig_path, object_list, n=5, save_fig=True):
             
     return imgs
 
-def mae_input_format(imgs, poses, nerf_input, mae_input, emb_type='IMAGE'):
+def mae_input_format(imgs, poses, nerf_input, mae_input, emb_type='IMAGE', sampling_pose=None):
     """ NeRF input format with MAE input format (F = nerf_input / N = mae_input)
     args
     imgs  (torch) [F, H, W, 3]
@@ -58,8 +58,8 @@ def mae_input_format(imgs, poses, nerf_input, mae_input, emb_type='IMAGE'):
         imgs        [B, 3, Hxn, Wxn]
         poses       [B, N, 4, 4] 
     """
-    # Only use [:nerf_input]
-    rand_pose = sampling_pose(mae_input-nerf_input, theta_range=[-180., 180.], phi_range=[-90., 0.], radius_range=[4., 4.])      # [N-F, 4, 4]
+    if sampling_pose is not None :
+        sampling_pose(mae_input-nerf_input)
 
     # 
     imgs = torch.cat([imgs, torch.zeros((mae_input-nerf_input, *imgs.shape[1:]))], dim=0)       
