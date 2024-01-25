@@ -320,7 +320,7 @@ def load_nerf_llff_data(basedir, num_inputs=25, scale=8, llffhold=8):
             i_test = [i_test]
 
         if llffhold > 0:
-            i_test = np.arange(images.shape[0])[::llffhold]
+            i_test = np.arange(images.shape[0])[::llffhold][1:] # pop 0
 
         i_val = i_test
         i_train = np.array([i for i in np.arange(int(images.shape[0])) if
