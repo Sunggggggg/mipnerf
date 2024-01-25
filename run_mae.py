@@ -18,8 +18,6 @@ from MAE import make_input, IMAGE_MAE, PATCH_MAE
 # 
 from MAE import image_plot, to8b
 
-FIX = True 
-
 def train(rank, world_size, args):
     print(f"Local gpu id : {rank}, World Size : {world_size}")
     set_ddp(rank, world_size)

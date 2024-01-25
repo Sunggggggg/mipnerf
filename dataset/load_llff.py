@@ -1,5 +1,6 @@
 import numpy as np
 import os, imageio, random
+import torch
 
 ########## Slightly modified version of LLFF data loading code 
 ##########  see https://github.com/Fyusion/LLFF for original
@@ -326,7 +327,7 @@ def load_nerf_llff_data(basedir, num_inputs=25, scale=8, llffhold=8):
                         (i not in i_test and i not in i_val)])
         # Few-shot
         i_train = i_train[-num_inputs:]             # 
-        print(i_train)
+        print(i_train, i_test)
         
         # train
         train_imgs.append(images[i_train])        # [N, H, W, 3]
@@ -336,3 +337,31 @@ def load_nerf_llff_data(basedir, num_inputs=25, scale=8, llffhold=8):
     train_poses = np.stack(train_poses, 0)    # [O, N, 4, 4]
 
     return train_imgs, train_poses, hwf, object_list
+
+def sampling_pose(N, poses, bounds):
+    """
+    poses       : LLFF Style pose matrix    [N, 3, 5]
+    bounds      : LLFF Style bound matrix   [N, 2]
+    """
+    close_depth, inf_depth = bounds.min() * .9, bounds.max() * 5.
+    dt = .75
+    focal = 1 / (((1 - dt) / close_depth + dt / inf_depth))
+
+    # Get radii for spiral path using 90th percentile of camera positions.
+    positions = poses[:, :3, 3]
+    radii = np.percentile(np.abs(positions), 100, 0)
+    radii = np.concatenate([radii, [1.]])
+
+    # Generate random poses.
+    random_poses = []
+    cam2world = poses_avg(poses)[:, :-1]    # [3, 5]
+    up = poses[:, :3, 1].mean(0)
+    for _ in range(N):
+        t = radii * np.concatenate([2 * np.random.rand(3) - 1., [1,]]) # [4]
+        position = cam2world @ t
+        lookat = cam2world @ [0, 0, -focal, 1.]
+        z_axis = position - lookat
+        random_poses.append(torch.Tensor(viewmatrix(z_axis, up, position)))
+    random_poses = torch.stack(random_poses, axis=0)
+
+    return random_poses
