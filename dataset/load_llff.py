@@ -385,7 +385,7 @@ def interp(pose1, pose2, s):
     R = R.as_matrix()
     assert R.shape == (3, 3)
     transform = np.concatenate([R, C[:, None]], axis=-1)
-    return torch.tensor(transform, dtype=pose1.dtype)
+    return torch.tensor(transform)
 
 def interp3(pose1, pose2, pose3, s12, s3):
     return interp(interp(pose1, pose2, s12).cpu(), pose3, s3)
