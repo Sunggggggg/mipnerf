@@ -103,6 +103,12 @@ def train(rank, world_size, args):
     # Set multi gpus
     model = DDP(model, device_ids=[rank])
     
+    #################################
+    # Move training data to GPU
+    model.train()
+    poses = torch.Tensor(poses).to(rank)
+    render_poses = torch.Tensor(render_poses).to(rank)
+    
     # Loss func (Mip-NeRF)
     loss_func = MipNeRFLoss(args.coarse_weight_decay)
     #loss_func = NeRFLoss()
@@ -119,9 +125,9 @@ def train(rank, world_size, args):
             sampling_pose_function = lambda N : blender_sampling_pose(N, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
         elif args.dataset_type == 'LLFF' :
             FIX = True 
-            poses_np = render_poses
+            # poses_np = poses
             #sampling_pose_function = lambda N : llff_sampling_pose(N, poses=poses_np, bounds=bds)
-            sampling_pose_function = lambda N : llff_sampling_pose_interp(N, poses=poses_np)
+            sampling_pose_function = lambda N : llff_sampling_pose_interp(N, poses=poses)
     
         if FIX :
             i_train = np.array(args.llff_train_views)
@@ -159,12 +165,6 @@ def train(rank, world_size, args):
         
         # 3. MAE loss
         mae_loss_func = MAELoss(args.mae_loss_func)
-
-    #################################
-    # Move training data to GPU
-    model.train()
-    poses = torch.Tensor(poses).to(rank)
-    render_poses = torch.Tensor(render_poses).to(rank)
 
     for i in trange(start, max_iters):
         # 1. Random select image
