@@ -356,7 +356,6 @@ def encoder_image_embedding(args, H, W):
                           decoder_embed_dim=args.decoder_embed_dim, mlp_ratio=4, norm_layer=nn.LayerNorm, 
                           emb_type=args.emb_type, cam_pose_encoding=args.cam_pose_encoding)
     
-    print("Load MipNeRF model weight :", args.mae_weight)
     print("Build image embedding MAE :", print_parameters(encoder))
     print(f"Image size : ({H}, {W})")
     print(f"Patch size : ({patch_H}, {patch_W})")
@@ -372,7 +371,6 @@ def encoder_patch_embedding(args, H, W):
                           decoder_embed_dim=args.decoder_embed_dim, mlp_ratio=4, norm_layer=nn.LayerNorm, 
                           emb_type=args.emb_type, cam_pose_encoding=args.cam_pose_encoding)
     
-    print("Load MipNeRF model weight :", args.mae_weight)
     print("Build image embedding MAE :", print_parameters(encoder))
     print(f"Image size : ({H*n}, {W*n})")
     print(f"Patch size : ({H}, {W})")
