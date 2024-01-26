@@ -337,7 +337,6 @@ def llff_sampling_pose(N, poses, bounds):
     return 
         [N, 3, 4]
     """
-    print(type(poses), type(bounds))
     close_depth, inf_depth = bounds.min() * .9, bounds.max() * 5.
     dt = .75
     focal = 1 / (((1 - dt) / close_depth + dt / inf_depth))
