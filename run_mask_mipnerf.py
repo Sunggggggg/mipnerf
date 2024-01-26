@@ -119,7 +119,7 @@ def train(rank, world_size, args):
             sampling_pose_function = lambda N : blender_sampling_pose(N, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
         elif args.dataset_type == 'LLFF' :
             FIX = True 
-            poses_np = pose
+            poses_np = poses
             sampling_pose_function = lambda N : llff_sampling_pose(N, poses=poses_np, bounds=bds)
 
         if FIX :
