@@ -305,6 +305,8 @@ class OnlyEncoder(nn.Module):
             decoder_pos_embed = torch.from_numpy(decoder_pos_embed).float().unsqueeze(0)            # [1, N+1, embed_dim]
             decoder_pos_embed = decoder_pos_embed.type(x.type())
 
+        print(x.shape)
+        print(decoder_pos_embed.shape)
         x = x + decoder_pos_embed
 
         return x
