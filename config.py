@@ -14,6 +14,7 @@ def config_parser():
     parser.add_argument("--dataset_type", type=str, default='blender')
     parser.add_argument('--scale', default=4, type=int)
     parser.add_argument("--testskip", type=int, default=8)
+    parser.add_argument("--llff_train_views", type=int, nargs="+", default=[])
     # Optimizer and scheduler
     parser.add_argument("--lr_init", type=float, default=1e-3)      
     parser.add_argument("--weight_decay", type=float, default=1e-5)

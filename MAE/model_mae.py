@@ -293,7 +293,7 @@ class OnlyEncoder(nn.Module):
         x = self.decoder_embed(x)
         mask_tokens = self.mask_token.repeat(x.shape[0], N_inputs - N_fewshots, 1)
         x_ = torch.cat([x[:, 1:, :], mask_tokens], dim=1)  # no cls token
-        x = torch.cat([x[:, :1, :], x_], dim=1) 
+        x = torch.cat([x[:, :1, :], x_], dim=1)            # [1, F+1, dim]
 
         if self.cam_pose_encoding :
             theta, phi = matrix2angle(poses)

@@ -122,9 +122,7 @@ def train(rank, world_size, args):
             sampling_pose = lambda N : llff_sampling_pose(N, poses, bds)
 
         if FIX :
-            # Always same input index
-            # i_train = np.arange(nerf_input)
-            i_train = np.array([0, 1, 2, 3, 4, 5, 6, 7, 9]) # 9
+            i_train = np.array(args.llff_train_views)
         else :
             i_train = random.sample(list(i_train), nerf_input)
         
