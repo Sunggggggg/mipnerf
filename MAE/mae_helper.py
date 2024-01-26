@@ -59,7 +59,7 @@ def mae_input_format(imgs, poses, nerf_input, mae_input, emb_type='IMAGE', sampl
         poses       [B, N, 4, 4] 
     """
     if sampling_pose is not None :
-        sampling_pose(mae_input-nerf_input)
+        rand_pose = sampling_pose(mae_input-nerf_input)
 
     # 
     imgs = torch.cat([imgs, torch.zeros((mae_input-nerf_input, *imgs.shape[1:]))], dim=0)       

@@ -350,7 +350,7 @@ def llff_sampling_pose(N, poses, bounds):
 
     # Generate random poses.
     random_poses = []
-    cam2world = poses_avg(poses)[:, :-1]    # [3, 5]
+    cam2world = poses_avg(poses)[:, :-1]    # [3, 4]
     up = poses[:, :3, 1].mean(0)
     for _ in range(N):
         t = radii * np.concatenate([2 * np.random.rand(3) - 1., [1,]]) # [4]
