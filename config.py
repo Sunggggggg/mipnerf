@@ -16,9 +16,9 @@ def config_parser():
     parser.add_argument("--testskip", type=int, default=8)
     parser.add_argument("--llff_train_views", type=int, nargs="+", default=[])
     # Optimizer and scheduler
-    parser.add_argument("--lr_init", type=float, default=1e-3)      
-    parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--lr_final", type=float, default=5e-5)
+    parser.add_argument("--lr_init", type=float, default=1e-3)      # 0.001    
+    parser.add_argument("--weight_decay", type=float, default=1e-5) 
+    parser.add_argument("--lr_final", type=float, default=5e-5)     # 0.00005
     parser.add_argument("--lr_delay_steps", type=int, default=2500)
     parser.add_argument("--lr_delay_mult", type=float, default=0.1)
     # Loss

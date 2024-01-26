@@ -24,7 +24,7 @@ def load_data(datadir, dataset_type='blender', scale=4,
 
         if llffhold > 0:
             print('Auto LLFF holdout,', llffhold)
-            i_test = np.arange(images.shape[0])[::llffhold]
+            i_test = np.arange(images.shape[0])[::llffhold][1:]
 
         i_val = i_test
         i_train = np.array([i for i in np.arange(int(images.shape[0])) if
