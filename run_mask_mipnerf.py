@@ -227,7 +227,7 @@ def train(rank, world_size, args):
             object_loss_c = object_loss_c * args.loss_lam_c
 
             # Fine
-            rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type)
+            rgbs_images, rgbs_poses = mae_input_format(rgbs_f, sampled_poses, nerf_input, mae_input, args.emb_type, sampling_pose_function)
             rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
             rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
             rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
