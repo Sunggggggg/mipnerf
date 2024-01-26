@@ -222,15 +222,13 @@ def spherify_poses(poses, bds):
     return poses_reset, new_poses, bds
 
 def load_llff_data(basedir, factor=8, recenter=True, bd_factor=.75, spherify=False, path_zflat=False):
-    """ Load nerf_synthetic dataset (specific object e.g. flower)
-        For NeRF training inputs
+    """ Load nerf_llff dataset (specific object e.g. flower)
     
     Return
         images          : [N, H, W, 3]
-        poses           : [N, 4, 4]
-        bds             : 
+        poses           : [N, 3, 4]
+        bds             : [N, 2]
         render_poses    : 120
-        i_test          : 
     """
     poses, bds, imgs = _load_data(basedir, factor=factor) # factor=8 downsamples original imgs by 8x
     

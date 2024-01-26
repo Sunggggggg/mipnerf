@@ -149,12 +149,14 @@ def train(rank, world_size, args):
         encoder.eval()
 
         train_images, train_poses = torch.tensor(images[i_train]), torch.tensor(poses[i_train])
-        print(train_poses.shape)
         mae_input_images, mae_input_poses = mae_input_format(train_images, train_poses, nerf_input, mae_input, args.emb_type, sampling_pose)
         mae_input_images = mae_input_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
         mae_input_poses = mae_input_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
 
         with torch.no_grad() :
+            print(mae_input_images.shape)
+            print(mae_input_poses.shape)
+            
             gt_feat = encoder(mae_input_images, mae_input_poses, mae_input, nerf_input)  #[1, N+1, D]
         print(f"Feature vector shape : {gt_feat.shape}")
         
