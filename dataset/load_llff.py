@@ -396,6 +396,6 @@ def llff_sampling_pose_interp(N, poses):
     for _ in range(N) :
         rend_i = np.random.choice(poses.shape[0], size=3, replace=True)
         pose1, pose2, pose3 = poses[rend_i, :3, :4]
-        s12, s3 = [random.random() for _ in range(2)]
+        s12, s3 = [np.random.randint(1, 100000) / 100000 for _ in range(2)]
         sample_poses.append(interp3(pose1, pose2, pose3, s12, s3))
     return torch.stack(sample_poses, 0)
