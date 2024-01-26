@@ -116,10 +116,10 @@ def train(rank, world_size, args):
 
         if args.dataset_type == 'blender' :
             FIX = False
-            sampling_pose = lambda N : blender_sampling_pose(N, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
+            sampling_pose_function = lambda N : blender_sampling_pose(N, theta_range=[-180.+1.,180.-1.], phi_range=[-90., 0.], radius_range=[3.5, 4.5])
         elif args.dataset_type == 'LLFF' :
             FIX = True 
-            sampling_pose = lambda N : llff_sampling_pose(N, poses, bds)
+            sampling_pose_function = lambda N : llff_sampling_pose(N, poses=poses, bounds=bds)
 
         if FIX :
             i_train = np.array(args.llff_train_views)
@@ -147,7 +147,7 @@ def train(rank, world_size, args):
         encoder.eval()
 
         train_images, train_poses = torch.tensor(images[i_train]), torch.tensor(poses[i_train])
-        mae_input_images, mae_input_poses = mae_input_format(train_images, train_poses, nerf_input, mae_input, args.emb_type, sampling_pose)
+        mae_input_images, mae_input_poses = mae_input_format(train_images, train_poses, nerf_input, mae_input, args.emb_type, sampling_pose_function)
         mae_input_images = mae_input_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W]
         mae_input_poses = mae_input_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
 
@@ -211,14 +211,14 @@ def train(rank, world_size, args):
         # MAE
         if args.mae_weight :
             if i == 1 or i % 10 == 0 :
-                sampled_poses = sampling_pose(nerf_input)
+                sampled_poses = sampling_pose_function(nerf_input)
                 rgbs = render_sample_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
                                     near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, progress_bar=False) # [N, 2, H, W, 3]
                 rgbs = torch.tensor(rgbs)
                 rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
 
             # Coarse
-            rgbs_images, rgbs_poses = mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type, sampling_pose)
+            rgbs_images, rgbs_poses = mae_input_format(rgbs_c, sampled_poses, nerf_input, mae_input, args.emb_type, sampling_pose_function)
             rgbs_images = rgbs_images.type(torch.cuda.FloatTensor).to(rank)      # [1, 3, N, H, W] or # [1, 3, Hn, Wn]
             rgbs_poses = rgbs_poses.type(torch.cuda.FloatTensor).to(rank)        # [1, N, 4, 4]
             rendered_feat = encoder(rgbs_images, rgbs_poses, mae_input, nerf_input)
