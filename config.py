@@ -29,8 +29,8 @@ def config_parser():
     parser.add_argument("--netchunk", type=int, default=1024*64)
     parser.add_argument("--N_rand", type=int, default=1024*4, help='#of Sampling rays')
     parser.add_argument("--no_ndc", action='store_true')
-    parser.add_argument("--precrop_iters", type=int, default=500)
-    parser.add_argument("--precrop_frac", type=float, default=.5) 
+    parser.add_argument("--precrop_iters", type=int, default=0)
+    parser.add_argument("--precrop_frac", type=float, default=0.5) 
     # Model 
     parser.add_argument("--use_viewdirs", action="store_true", help='use full 5D input instead of 3D')
     parser.add_argument("--randomized", action="store_true")
