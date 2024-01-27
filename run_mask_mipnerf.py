@@ -215,9 +215,10 @@ def train(rank, world_size, args):
         # 5. loss and update
         loss, (mse_loss_c, mse_loss_f), (train_psnr_c, train_psnr_f) = loss_func(comp_rgbs, target, lossmult.to(rank))
 
+
         # MAE
         if args.mae_weight :
-            if i == 1 or i % 10 == 0 :
+            if i == 1 or i % 30 == 0 :
                 sampled_poses = sampling_pose_function(nerf_input)
                 sampled_poses = torch.cat([sampled_poses, masked_view_poses], 0)
                 rgbs = render_sample_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
