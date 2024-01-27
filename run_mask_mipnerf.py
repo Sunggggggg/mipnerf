@@ -221,7 +221,7 @@ def train(rank, world_size, args):
                 sampled_poses = sampling_pose_function(nerf_input)
                 sampled_poses = torch.cat([sampled_poses, masked_view_poses], 0)
                 rgbs = render_sample_path(sampled_poses.to(rank), hwf, K, args.chunk, model, 
-                                    near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, progress_bar=False) # [N, 2, H, W, 3]
+                                    near=near, far=far, use_viewdirs=args.use_viewdirs, no_ndc=args.no_ndc, progress_bar=True) # [N, 2, H, W, 3]
                 rgbs = torch.tensor(rgbs)
                 rgbs_c, rgbs_f = rgbs[:, 0], rgbs[:, 1]
 
