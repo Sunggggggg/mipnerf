@@ -43,7 +43,7 @@ def make_input(imgs, emb_type, fig_path, object_list, n=5, save_fig=True):
             
     return imgs
 
-def mae_input_format(imgs, poses, nerf_input, mae_input, emb_type='IMAGE', sampling_pose_function=None):
+def mae_input_format(imgs, poses, mae_input, emb_type='IMAGE'):
     """ NeRF input format with MAE input format (F = nerf_input / N = mae_input)
     args
     imgs  (torch) [F, H, W, 3]
@@ -58,12 +58,6 @@ def mae_input_format(imgs, poses, nerf_input, mae_input, emb_type='IMAGE', sampl
         imgs        [B, 3, Hxn, Wxn]
         poses       [B, N, 4, 4] 
     """
-    if sampling_pose_function is not None :
-        rand_pose = sampling_pose_function(mae_input-nerf_input)
-        imgs = torch.cat([imgs, torch.zeros((mae_input-nerf_input, *imgs.shape[1:]))], dim=0)       
-        poses = torch.cat([poses, rand_pose], dim=0)
-    
-    #
     if emb_type == 'IMAGE' :
         imgs = imgs.permute(3, 0, 1, 2).unsqueeze(0)    # [1, 3, N, H, W]
         poses = poses.unsqueeze(0)                      # [1, N, 4, 4]
