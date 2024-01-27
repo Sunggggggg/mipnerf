@@ -391,6 +391,9 @@ def interp3(pose1, pose2, pose3, s12, s3):
     return interp(interp(pose1, pose2, s12).cpu(), pose3, s3)
 
 def llff_sampling_pose_interp(N, poses):
+    """
+    return [N, 3, 4]
+    """
     sample_poses = []
     
     for _ in range(N) :
