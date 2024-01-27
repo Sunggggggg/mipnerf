@@ -121,7 +121,7 @@ def train(rank, world_size, args):
             FIX = True 
             poses_np = poses
             sampling_pose_function = lambda N : llff_sampling_pose(N, poses=poses_np, bounds=bds)
-            #sampling_pose_function = lambda N : llff_sampling_pose_interp(N, poses=render_poses)
+            sampling_pose_function = lambda N : llff_sampling_pose_interp(N, poses=torch.Tensor(render_poses))
     
         if FIX :
             i_train = np.array(args.llff_train_views)
