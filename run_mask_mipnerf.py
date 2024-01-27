@@ -103,11 +103,6 @@ def train(rank, world_size, args):
     # Set multi gpus
     model = DDP(model, device_ids=[rank])
 
-    # Move training data to GPU
-    model.train()
-    poses = torch.Tensor(poses).to(rank)
-    render_poses = torch.Tensor(render_poses).to(rank)
-
     # Loss func (Mip-NeRF)
     loss_func = MipNeRFLoss(args.coarse_weight_decay)
     #loss_func = NeRFLoss()
@@ -166,6 +161,10 @@ def train(rank, world_size, args):
         mae_loss_func = MAELoss(args.mae_loss_func)
 
     #################################
+     # Move training data to GPU
+    model.train()
+    poses = torch.Tensor(poses).to(rank)
+    render_poses = torch.Tensor(render_poses).to(rank)
 
     for i in trange(start, max_iters):
         # 1. Random select image
